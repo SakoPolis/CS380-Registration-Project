@@ -1,8 +1,8 @@
 import express from 'express';
-import userRoutes from './routes/userRoutes.js';
-import courseRoutes from './routes/courseRoutes.js';
+import cartRoutes    from './routes/cartRoutes.js';
+import courseRoutes  from './routes/courseRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
-import cartRoutes from './routes/cartRoutes.js';
+import userRoutes    from './routes/userRoutes.js';
 
 import cors from 'cors';
 
@@ -18,10 +18,10 @@ app.use(cors({
 app.use(express.json());
 
 //API Mounts
-app.use('/api/users', userRoutes);
-app.use('/api/courses', courseRoutes);
+app.use('/api/cart',     cartRoutes);
+app.use('/api/classes',  courseRoutes);
 app.use('/api/payments', paymentRoutes);
-app.use('/api/cart', cartRoutes);
+app.use('/api/users',    userRoutes);
 
 //404 Handle
 app.use((req, res, next) => {
