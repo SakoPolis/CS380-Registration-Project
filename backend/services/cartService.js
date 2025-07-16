@@ -1,41 +1,50 @@
-import supabase from "../config/supabase.js";
 
-export async function getCartItems(user_id) {
-    const { data, error } = await supabase
-        .from('class_bookings')
-        .select('*')
-        .eq('user_id', user_id)
-        .eq('status', 'booked');
+// backend/services/CartService.js
 
-    if (error) throw error;
-    return data;
-}
+import { supabase } from '../config/supabase.js';
 
-export async function addCartItem(user_id, { date, slot }) {
-    const { data, error } = await supabase
-        .from('class_bookings')
-        .insert([
-            {
-                user_id,
-                class_id: slot.id,  // assume your slot has an `id`
+class CartService {
+    constructor() {
+        //dependencies go here
+    }
+
+    /** Fetch all “booked” items for a user */
+    async getAll(userId) {
+        const { data, error } = await supabase
+            .from('class_bookings')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('status', 'booked');
+        if (error) throw error;
+        return data;
+    }
+
+    /** Add a new booking */
+    async create(userId, { date, slot }) {
+        const { data, error } = await supabase
+            .from('class_bookings')
+            .insert([{
+                user_id:   userId,
+                class_id:  slot.id,
                 booked_at: date,
-                status: 'booked'
-            }
-        ])
-        .single();
+                status:    'booked'
+            }])
+            .single();
+        if (error) throw error;
+        return data;
+    }
 
-    if (error) throw error;
-    return data;
+    /** “Cancel” a booking (mark refunded) */
+    async remove(userId, bookingId) {
+        const { data, error } = await supabase
+            .from('class_bookings')
+            .update({ status: 'cancelled' })
+            .eq('user_id', userId)
+            .eq('id', bookingId)
+            .single();
+        if (error) throw error;
+        return data;
+    }
 }
 
-export async function removeCartItem(user_id, booking_id) {
-    const { data, error } = await supabase
-        .from('class_bookings')
-        .update({ status: 'cancelled' })
-        .eq('user_id', user_id)
-        .eq('id', booking_id)
-        .single();
-
-    if (error) throw error;
-    return data;
-}
+export default new CartService();
