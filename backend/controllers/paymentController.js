@@ -1,12 +1,12 @@
 
 // controllers/PaymentController.js
 
-import BaseController from "../services/baseController.js";
-import * as paymentService from "../services/paymentService.js";
+import BaseController  from "./baseController.js";
+import paymentService  from "../services/paymentService.js";
 
 class PaymentController extends BaseController {
     constructor() {
-        super(courseService);
+        super(paymentService);
     }
 }
 

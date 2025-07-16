@@ -2,7 +2,7 @@
 // controllers/CartController.js
 
 import BaseController from "./baseController.js";
-import * as cartService from '../services/cartService';
+import cartService from '../services/cartService';
 
 class CartController extends BaseController {
     constructor() {

@@ -1,8 +1,8 @@
 
 // controllers/courseController.js
 
-import BaseController from "../services/baseController.js";
-import * as courseService from "../services/courseService.js";
+import BaseController from "./baseController.js";
+import courseService  from "../services/courseService.js";
 
 class CourseController extends BaseController {
     constructor() {
