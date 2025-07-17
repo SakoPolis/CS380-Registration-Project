@@ -3,6 +3,7 @@
 
 import express              from 'express';
 import paymentController    from '../controllers/paymentController.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -14,5 +15,7 @@ router.post('/',   paymentController.create);
 
 // Delete a payment
 router.delete('/:id', paymentController.delete);
+
+router.post('/checkout', authenticate, paymentController.checkout);
 
 export default router;

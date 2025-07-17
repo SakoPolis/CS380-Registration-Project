@@ -57,6 +57,32 @@ class paymentService {
         if (error) throw error;
         return data;
     }
+    async checkout(userId) {
+        const cartItems = await cartService.getAll(userId);
+        if (!cartItems || cartItems.length === 0) {
+            throw new Error("Cart is empty.");
+        }
+
+        const purchaseRecords = cartItems.map(item => ({
+            user_id: userId,
+            class_id: item.class_id,
+            price: item.price,
+            status: 'confirmed',
+            purchased_at: new Date(),
+        }));
+
+        const { data, error } = await supabase
+            .from('purchases')
+            .insert(purchaseRecords)
+            .select();
+
+        if (error) throw error;
+
+        // Optionally: mark cart items as purchased (or remove them)
+        // await cartService.clear(userId); <-- if you had a clear function
+
+        return data;
+    }
 }
 
 export default new paymentService();
