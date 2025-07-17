@@ -1,7 +1,7 @@
 
 // backend/middleware/auth.js
 
-import { supabase } from '../config/supabase.js';
+import supabase from '../config/supabase.js';
 
 /**
  * Middleware to verify the user’s JWT from the Authorization header

@@ -1,7 +1,7 @@
 
 // backend/services/classSlotService.js
 
-import { supabase } from '../config/supabase.js';
+import supabase from '../config/supabase.js';
 
 class classSlotService {
     // Fetch all courses (or maybe only "active" ones)

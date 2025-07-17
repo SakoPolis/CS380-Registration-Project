@@ -1,7 +1,7 @@
 
 // backend/services/courseService.js
 
-import { supabase } from '../config/supabase.js';
+import supabase from '../config/supabase.js';
 
 class courseService {
     // Fetch all courses (or maybe only "active" ones)

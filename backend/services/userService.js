@@ -1,7 +1,7 @@
 
 // backend/services/userService.js
 
-import { supabase } from '../config/supabase.js';
+import supabase from '../config/supabase.js';
 
 class userService {
     async signUp(email, password, firstName, lastName) {
