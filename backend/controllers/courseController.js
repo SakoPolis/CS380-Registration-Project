@@ -1,13 +1,13 @@
 
 // controllers/courseController.js
 
-import BaseController from "./baseController.js";
+import baseController from "./baseController.js";
 import courseService  from "../services/courseService.js";
 
-class CourseController extends BaseController {
+class courseController extends baseController {
     constructor() {
         super(courseService);
     }
 }
 
-export default new CourseController();
+export default new courseController();

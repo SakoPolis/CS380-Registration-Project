@@ -2,17 +2,17 @@
 // backend/routes/userRoutes.js
 
 import express             from 'express';
-import UserController      from '../controllers/userController.js';
+import userController      from '../controllers/userController.js';
 
 const router = express.Router();
 
 // Sign up a new user
-router.post('/signup',    UserController.signUp);
+router.post('/signup',    userController.signUp);
 
 // Sign in an existing user
-router.post('/signin',    UserController.signIn);
+router.post('/signin',    userController.signIn);
 
-// router.get('/profile',   UserController.getProfile);
-// router.put('/profile',   UserController.updateProfile);
+// router.get('/profile',   userController.getProfile);
+// router.put('/profile',   userController.updateProfile);
 
 export default router;

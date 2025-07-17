@@ -1,9 +1,9 @@
 
-// backend/services/CartService.js
+// backend/services/cartService.js
 
 import { supabase } from '../config/supabase.js';
 
-class CartService {
+class cartService {
     constructor() {
         //dependencies go here
     }
@@ -47,4 +47,4 @@ class CartService {
     }
 }
 
-export default new CartService();
+export default new cartService();

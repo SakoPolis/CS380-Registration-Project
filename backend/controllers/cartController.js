@@ -1,10 +1,10 @@
 
 // controllers/CartController.js
 
-import BaseController from "./baseController.js";
+import baseController from "./baseController.js";
 import cartService from '../services/cartService';
 
-class CartController extends BaseController {
+class cartController extends baseController {
     constructor() {
         super(cartService);
     }
@@ -13,4 +13,4 @@ class CartController extends BaseController {
 
 }
 
-export default new CartController();
+export default new cartController();

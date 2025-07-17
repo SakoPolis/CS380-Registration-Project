@@ -3,6 +3,7 @@ import cartRoutes    from './routes/cartRoutes.js';
 import courseRoutes  from './routes/courseRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import userRoutes    from './routes/userRoutes.js';
+import classSlotRoutes from "./routes/classSlotRoutes.js";
 
 import cors from 'cors';
 
@@ -22,13 +23,14 @@ app.use('/api/cart',     cartRoutes);
 app.use('/api/classes',  courseRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/users',    userRoutes);
+app.use('/api/slots',  classSlotRoutes);
 
 //404 Handle
 app.use((req, res, next) => {
     res.status(404).json({ error: 'Not Found' });
 });
 
-//Error Handling MIddleware
+//Error Handling Middleware
 app.use((err, req, res, next) => {
     console.error(err);  // log to console (or your logger)
 

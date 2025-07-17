@@ -3,7 +3,7 @@
 
 import { supabase } from '../config/supabase.js';
 
-class UserService {
+class userService {
     async signUp(email, password, firstName, lastName) {
         const { data, error } = await supabase.auth.signUp({
             email,
@@ -34,4 +34,4 @@ class UserService {
     }
 }
 
-export default new UserService();
+export default new userService();

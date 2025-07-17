@@ -3,9 +3,9 @@
 
 import { supabase } from '../config/supabase.js';
 
-class PaymentService {
+class paymentService {
     // Fetch all payments for this user
-    async getAll(user_id) {
+    async getAll(userId) {
         const { data, error } = await supabase
             .from('purchases')
             .select('*')
@@ -15,7 +15,7 @@ class PaymentService {
     }
 
     // Create a new payment / purchase
-    async create(user_id, paymentData) {
+    async create(userId, paymentData) {
         const { data, error } = await supabase
             .from('purchases')
             .insert([{ user_id, ...paymentData }])
@@ -25,7 +25,7 @@ class PaymentService {
     }
 
     // Optionally confirm a pending payment
-    async confirm(user_id, purchaseId) {
+    async confirm(userId, purchaseId) {
         const { data, error } = await supabase
             .from('purchases')
             .update({ status: 'confirmed' })
@@ -36,7 +36,7 @@ class PaymentService {
     }
 
     // Refund an existing purchase
-    async refund(user_id, purchaseId, refundAmount) {
+    async refund(userId, purchaseId, refundAmount) {
         const { data, error } = await supabase
             .from('purchases')
             .update({ status: 'refunded', refunded_at: new Date() })
@@ -48,7 +48,7 @@ class PaymentService {
     }
 
     // Delete (rarely used) – could void a payment
-    async remove(user_id, purchaseId) {
+    async remove(userId, purchaseId) {
         const { data, error } = await supabase
             .from('purchases')
             .delete()
@@ -59,4 +59,4 @@ class PaymentService {
     }
 }
 
-export default new PaymentService();
+export default new paymentService();

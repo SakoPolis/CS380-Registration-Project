@@ -3,9 +3,9 @@
 
 import { supabase } from '../config/supabase.js';
 
-class CourseService {
+class courseService {
     // Fetch all courses (or maybe only "active" ones)
-    async getAll(user_id) {
+    async getAll(userId) {
         const { data, error } = await supabase
             .from('classes')
             .select('*');
@@ -14,7 +14,7 @@ class CourseService {
     }
 
     // Create a new course
-    async create(user_id, courseData) {
+    async create(userId, courseData) {
         const { data, error } = await supabase
             .from('classes')
             .insert([{ ...courseData }])
@@ -24,7 +24,7 @@ class CourseService {
     }
 
     // Update an existing course
-    async update(user_id, courseId, updates) {
+    async update(userId, courseId, updates) {
         const { data, error } = await supabase
             .from('classes')
             .update(updates)
@@ -35,7 +35,7 @@ class CourseService {
     }
 
     // Delete (or deactivate) a course
-    async remove(user_id, courseId) {
+    async remove(userId, courseId) {
         const { data, error } = await supabase
             .from('classes')
             .delete()
@@ -46,4 +46,4 @@ class CourseService {
     }
 }
 
-export default new CourseService();
+export default new courseService();

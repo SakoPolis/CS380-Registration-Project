@@ -1,6 +1,6 @@
 // controllers/baseController.js
 
-export default class BaseController {
+export default class baseController {
     constructor(service) {
         this.service = service;
         this.getAll = this.getAll.bind(this);

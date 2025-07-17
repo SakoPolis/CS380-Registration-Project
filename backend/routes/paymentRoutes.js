@@ -2,17 +2,17 @@
 // backend/routes/paymentRoutes.js
 
 import express              from 'express';
-import PaymentController    from '../controllers/paymentController.js';
+import paymentController    from '../controllers/paymentController.js';
 
 const router = express.Router();
 
 // List all payments
-router.get('/',    PaymentController.list);
+router.get('/',    paymentController.list);
 
 // Create a new payment
-router.post('/',   PaymentController.create);
+router.post('/',   paymentController.create);
 
 // Delete a payment
-router.delete('/:id', PaymentController.delete);
+router.delete('/:id', paymentController.delete);
 
 export default router;

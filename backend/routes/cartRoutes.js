@@ -2,17 +2,17 @@
 // backend/routes/cartRoutes.js
 
 import express            from 'express';
-import CartController     from '../controllers/cartController.js';
+import cartController     from '../controllers/cartController.js';
 
 const router = express.Router();
 
 // List all cart items
-router.get('/',    CartController.list);
+router.get('/',    cartController.list);
 
 // Add a new cart item
-router.post('/',   CartController.create);
+router.post('/',   cartController.create);
 
 // Remove a cart item
-router.delete('/:id', CartController.delete);
+router.delete('/:id', cartController.delete);
 
 export default router;
