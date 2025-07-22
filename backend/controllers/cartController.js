@@ -2,7 +2,14 @@
 // backend/controllers/cartController.js
 
 import CartService from '../services/cartService.js';
-class CartController {
+import BaseController from "./baseController.js";
+
+class CartController extends BaseController {
+
+    constructor() {
+        super(CartService);
+    }
+
     async add(req, res, next) {
         try {
             const item = await CartService.add(req.supabase, req.user.id, req.body);
