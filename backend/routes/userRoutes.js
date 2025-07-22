@@ -1,14 +1,17 @@
 
 // backend/routes/userRoutes.js
 
-import { Router } from 'express';
-import userController from '../controllers/userController.js';
+import express from 'express';
+import UserController from '../controllers/userController.js';
+import { authenticate } from '../middleware/auth.js';
 
-const router = Router();
+const router = express.Router();
 
-// register a new user
-router.post('/signup', userController.signUp);
+// Public: signup and signin
+router.post('/signup', UserController.signUp);
+router.post('/signin', UserController.signIn);
 
-router.post('/signin', userController.signIn);
+// (Optional) Protected user endpoints can go here, e.g.:
+// router.get('/me', authenticate, UserController.getProfile);
 
 export default router;

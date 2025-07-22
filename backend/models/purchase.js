@@ -1,7 +1,7 @@
 
 // backend/models/Purchase.js
 
-import supabase from '../config/supabase.js';
+import { makeSupabaseClient } from '../config/supabase.js';
 
 class Purchase {
     static tableName = 'purchases';
@@ -65,7 +65,7 @@ class Purchase {
         };
 
         if (this.data.id) {
-            const { data, error } = await supabase
+            const { data, error } = await makeSupabaseClient
                 .from(Purchase.tableName)
                 .update(dbData)
                 .eq('id', this.data.id)
@@ -82,7 +82,7 @@ class Purchase {
             };
             return this;
         } else {
-            const { data, error } = await supabase
+            const { data, error } = await makeSupabaseClient
                 .from(Purchase.tableName)
                 .insert([dbData])
                 .select()
@@ -101,7 +101,7 @@ class Purchase {
     }
 
     async fetch(id) {
-        const { data, error } = await supabase
+        const { data, error } = await makeSupabaseClient
             .from(Purchase.tableName)
             .select('id, user_id, amount_cents, status, purchased_at, refunded_at')
             .eq('id', id)
@@ -119,7 +119,7 @@ class Purchase {
     }
 
     async delete(id) {
-        const { error } = await supabase
+        const { error } = await makeSupabaseClient
             .from(Purchase.tableName)
             .delete()
             .eq('id', id);

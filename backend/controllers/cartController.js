@@ -1,33 +1,25 @@
 
-// controllers/cartController.js
+// backend/controllers/cartController.js
 
-import BaseController    from './baseController.js';
-import CartService       from '../services/cartService.js';
-
-class CartController extends BaseController {
-    constructor() {
-        super(CartService);
-        this.cancel    = this.cancel.bind(this);
-        this.cancelAll = this.cancelAll.bind(this);
-    }
-
-    async cancel(req, res, next) {
+import CartService from '../services/cartService.js';
+class CartController {
+    async add(req, res, next) {
         try {
-            const result = await this.service.cancel(req.params.id);
-            res.json(result);
-        } catch (err) {
-            next(err);
-        }
+            const item = await CartService.add(req.supabase, req.user.id, req.body);
+            res.status(201).json(item);
+        } catch (err) { next(err); }
     }
-
-    async cancelAll(req, res, next) {
+    async getAll(req, res, next) {
         try {
-            const result = await this.service.cancelAll(req.user.id);
-            res.json(result);
-        } catch (err) {
-            next(err);
-        }
+            const items = await CartService.getAll(req.supabase, req.user.id);
+            res.json(items);
+        } catch (err) { next(err); }
+    }
+    async delete(req, res, next) {
+        try {
+            await CartService.delete(req.supabase, req.user.id, req.params.id);
+            res.json({ message: 'Cart item deleted' });
+        } catch (err) { next(err); }
     }
 }
-
 export default new CartController();

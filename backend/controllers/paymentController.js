@@ -1,31 +1,10 @@
-// controllers/paymentController.js
-import BaseController     from './baseController.js';
-import PaymentService     from '../services/paymentService.js';
+// backend/controllers/paymentController.js
 
-class PaymentController extends BaseController {
-    constructor() {
-        super(PaymentService);
-        this.checkout = this.checkout.bind(this);
-        this.refund = this.refund.bind(this);
-    }
-
+import PaymentService from '../services/paymentService.js';
+class PaymentController {
     async checkout(req, res, next) {
-        try {
-            const result = await this.service.checkout(req.user.id, req.body);
-            res.status(201).json(result);
-        } catch (err) {
-            next(err);
-        }
-    }
-
+        try { const r = await PaymentService.checkout(req.supabase, req.user.id, req.body); res.json(r); } catch(e){next(e);} }
     async refund(req, res, next) {
-        try {
-            const refunded = await this.service.refund(req.params.id, req.body.refundAmountCents);
-            res.json(refunded);
-        } catch (err) {
-            next(err);
-        }
-    }
+        try { const r = await PaymentService.refund(req.supabase, req.params.purchaseId, req.body.amount_cents); res.json(r); } catch(e){next(e);} }
 }
-
 export default new PaymentController();

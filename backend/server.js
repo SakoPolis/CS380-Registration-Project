@@ -1,36 +1,34 @@
-
 // backend/server.js
-
 import express from 'express';
 import cartRoutes from './routes/cartRoutes.js';
-import courseRoutes from './routes/courseRoutes.js';
-import paymentRoutes from './routes/paymentRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import classSlotRoutes from './routes/classSlotRoutes.js';
+import bookingRoutes from './routes/bookingRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
 import cors from 'cors';
 
 const app = express();
 
 // Enable CORS
 app.use(cors({
-    origin: '*', // Allow all origins for testing
+    origin: '*',
     credentials: true,
 }));
 
 // JSON Body Parser
 app.use(express.json());
 
-// testing Root route
+// Root route
 app.get('/', (req, res) => {
     res.json({ message: 'Welcome to the CS380 Backend API' });
 });
 
-// API Mounts
-app.use('/api/cart', cartRoutes); // Already includes authenticate in cartRoutes.js
-app.use('/api/classes', courseRoutes); // Already includes authenticate in courseRoutes.js
-app.use('/api/payments', paymentRoutes); // Already includes authenticate in paymentRoutes.js
-app.use('/api/users', userRoutes); // No authenticate here
-app.use('/api/slots', classSlotRoutes); // Already includes authenticate in classSlotRoutes.js
+// API Routes
+app.use('/api/cart', cartRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api', classSlotRoutes);
+app.use('/api', bookingRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // 404 Handler
 app.use((req, res, next) => {

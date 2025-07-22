@@ -1,21 +1,17 @@
 
 // backend/routes/cartRoutes.js
 
-import { Router } from 'express';
+import express from 'express';
+import CartController from '../controllers/cartController.js';
 import { authenticate } from '../middleware/auth.js';
-import cartController from '../controllers/cartController.js';
 
-const router = Router();
+const router = express.Router();
 
-router.use(authenticate);
-
-// list all cart items
-router.get('/', cartController.getAll);
-
-// add a new cart item
-router.post('/', cartController.create);
-
-// remove a cart item
-router.delete('/:id', cartController.delete);
+// List all cart items
+router.get('/', authenticate, CartController.getAll);
+// Add item to cart
+router.post('/', authenticate, CartController.add);
+// Remove item from cart
+router.delete('/:id', authenticate, CartController.delete);
 
 export default router;

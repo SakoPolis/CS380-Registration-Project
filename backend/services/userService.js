@@ -1,11 +1,11 @@
 
 // backend/services/userService.js
 
-import supabase from '../config/supabase.js';
+import { makeSupabaseClient } from '../config/supabase.js';
 
 class UserService {
     async signUp(email, password) {
-        const { data: { user }, error } = await supabase.auth.signUp({
+        const { data: { user }, error } = await makeSupabaseClient.auth.signUp({
             email,
             password,
         });
@@ -14,7 +14,7 @@ class UserService {
     }
 
     async signIn(email, password) {
-        const { data: { session }, error } = await supabase.auth.signInWithPassword({
+        const { data: { session }, error } = await makeSupabaseClient.auth.signInWithPassword({
             email,
             password,
         });
@@ -23,7 +23,7 @@ class UserService {
     }
 
     async getUser(id) {
-        const { data, error } = await supabase
+        const { data, error } = await makeSupabaseClient
             .from('users')
             .select('*')
             .eq('id', id)

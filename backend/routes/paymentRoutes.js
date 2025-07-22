@@ -1,15 +1,18 @@
 
+
 // backend/routes/paymentRoutes.js
 
-import { Router } from 'express';
+import express from 'express';
 import { authenticate } from '../middleware/auth.js';
-import paymentController from '../controllers/paymentController.js';
+import PaymentController from '../controllers/paymentController.js';
 
-const router = Router();
-
+const router = express.Router();
+// Protect all payment routes
 router.use(authenticate);
 
-// create a purchase
-router.post('/checkout', paymentController.checkout);
+// Checkout (create a purchase)
+router.post('/checkout', PaymentController.checkout);
+// Refund a purchase
+router.post('/refund/:purchaseId', PaymentController.refund);
 
 export default router;
