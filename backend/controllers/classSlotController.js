@@ -1,14 +1,11 @@
-
 // backend/controllers/classSlotController.js
+import BaseController from './baseController.js';
+import ClassSlotService from '../services/classSlotService.js';
 
-import baseController from './baseController.js';
-import classSlotService    from '../services/classSlotService.js';
-
-class classSlotController extends baseController {
+class ClassSlotController extends BaseController {
     constructor() {
-        super(classSlotService);
+        super(ClassSlotService);
     }
-    // if you want to override list() to accept filters, you can override here
 }
 
-export default new classSlotController();
+export default new ClassSlotController(); // Export instance

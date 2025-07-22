@@ -15,13 +15,21 @@ export async function authenticate(req, res, next) {
         }
 
         const token = authHeader.split(' ')[1];
-        // Supabase v2: getUser(token)
-        const { data: { user }, error } = await supabase.auth.getUser(token);
+        const {
+            data: { user },
+            error
+        } = await supabase.auth.getUser(token);
+
         if (error || !user) {
             return res.status(401).json({ error: 'Invalid or expired token' });
         }
 
-        req.user = user;
+        // Attach both id and any custom claims
+        req.user = {
+            id: user.id,
+            appMetadata: user.app_metadata
+        };
+
         next();
     } catch (err) {
         next(err);
@@ -29,16 +37,13 @@ export async function authenticate(req, res, next) {
 }
 
 export function requireAdmin(req, res, next) {
-    /*const user = req.user;
+    const user = req.user;
     if (!user) {
         return res.status(401).json({ error: 'Not authenticated' });
     }
-
-    // Supabase stores custom claims in user.app_metadata
-    const isAdmin = user.app_metadata?.is_admin === true;
+    const isAdmin = user.appMetadata?.is_admin === true;
     if (!isAdmin) {
         return res.status(403).json({ error: 'Forbidden: admin only' });
     }
-
-    next();*/
+    next();
 }

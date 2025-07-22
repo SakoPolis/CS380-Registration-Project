@@ -1,18 +1,21 @@
 
-// backend/routes/slotRoutes.js
+// backend/routes/classSlotRoutes.js
 
-import express          from 'express';
-import classSlotController   from '../controllers/classSlotController.js';
-import { authenticate, /*requireAdmin*/ } from '../middleware/auth.js';
+import { Router } from 'express';
+import { authenticate } from '../middleware/auth.js';
+import classSlotController from '../controllers/classSlotController.js';
 
-const router = express.Router();
+const router = Router();
 
-// All users can view slots
-router.get('/',   authenticate, classSlotController.list);
+router.use(authenticate);
 
-// Only admins can create/update/delete slots
-router.post('/',        authenticate, /*requireAdmin,*/ classSlotController.create);
-router.put('/:id',      authenticate, /*requireAdmin,*/ classSlotController.update);
-router.delete('/:id',   authenticate, /*requireAdmin,*/ classSlotController.delete);
+// list all class slots
+router.get('/', classSlotController.getAll);
+
+// create a new slot
+router.post('/', classSlotController.create);
+
+// remove a slot
+router.delete('/:id', classSlotController.delete);
 
 export default router;

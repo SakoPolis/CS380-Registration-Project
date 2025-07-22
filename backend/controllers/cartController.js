@@ -1,16 +1,33 @@
 
-// controllers/CartController.js
+// controllers/cartController.js
 
-import baseController from "./baseController.js";
-import cartService from '../services/cartService';
+import BaseController    from './baseController.js';
+import CartService       from '../services/cartService.js';
 
-class cartController extends baseController {
+class CartController extends BaseController {
     constructor() {
-        super(cartService);
+        super(CartService);
+        this.cancel    = this.cancel.bind(this);
+        this.cancelAll = this.cancelAll.bind(this);
     }
 
-    // any cart specific override functions go here
+    async cancel(req, res, next) {
+        try {
+            const result = await this.service.cancel(req.params.id);
+            res.json(result);
+        } catch (err) {
+            next(err);
+        }
+    }
 
+    async cancelAll(req, res, next) {
+        try {
+            const result = await this.service.cancelAll(req.user.id);
+            res.json(result);
+        } catch (err) {
+            next(err);
+        }
+    }
 }
 
-export default new cartController();
+export default new CartController();

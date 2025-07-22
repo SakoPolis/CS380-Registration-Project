@@ -3,48 +3,78 @@
 
 import supabase from '../config/supabase.js';
 
-class cartService {
-    constructor() {
-        //dependencies go here
+class CartService {
+
+    constructor(){
+
     }
 
-    /** Fetch all “booked” items for a user */
     async getAll(userId) {
         const { data, error } = await supabase
-            .from('class_bookings')
-            .select('*')
-            .eq('user_id', userId)
-            .eq('status', 'booked');
-        if (error) throw error;
-        return data;
+            .from('carts')
+            .select(`
+        id,
+        user_id,
+        classes (
+          id,
+          title,
+          description,
+          price_cents
+        )
+      `)
+            .eq('user_id', userId);
+
+        if (error) throw new Error(error.message);
+
+        return data.map(({ id, user_id, classes }) => ({
+            id,
+            userId: user_id,
+            classes: classes.map(c => ({
+                id: c.id,
+                title: c.title,
+                description: c.description,
+                priceCents: c.price_cents
+            }))
+        }));
     }
 
-    /** Add a new booking */
-    async create(userId, { date, slot }) {
+    async create(userId, classId) {
         const { data, error } = await supabase
-            .from('class_bookings')
-            .insert([{
-                user_id:   userId,
-                class_id:  slot.id,
-                booked_at: date,
-                status:    'booked'
-            }])
+            .from('carts')
+            .insert([{ user_id: userId, class_id: classId }])
+            .select()
             .single();
-        if (error) throw error;
-        return data;
+
+        if (error) throw new Error(error.message);
+
+        return {
+            id: data.id,
+            userId: data.user_id,
+            classId: data.class_id
+        };
     }
 
-    /** “Cancel” a booking (mark refunded) */
-    async remove(userId, bookingId) {
-        const { data, error } = await supabase
-            .from('class_bookings')
-            .update({ status: 'cancelled' })
-            .eq('user_id', userId)
-            .eq('id', bookingId)
-            .single();
-        if (error) throw error;
-        return data;
+    async cancel(id) {
+        const { error } = await supabase
+            .from('carts')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw new Error(error.message);
+
+        return { cancelled: true };
+    }
+
+    async cancelAll(userId) {
+        const { count, error } = await supabase
+            .from('carts')
+            .delete({ returning: 'minimal' })
+            .eq('user_id', userId);
+
+        if (error) throw new Error(error.message);
+
+        return { cancelledCount: count };
     }
 }
 
-export default new cartService();
+export default new CartService();

@@ -1,18 +1,21 @@
 
 // backend/routes/courseRoutes.js
 
-import express             from 'express';
-import courseController    from '../controllers/courseController.js';
+import { Router } from 'express';
+import { authenticate } from '../middleware/auth.js';
+import courseController from '../controllers/courseController.js';
 
-const router = express.Router();
+const router = Router();
 
-// List all courses
-router.get('/',    courseController.list);
+router.use(authenticate);
 
-// Create a new course
-router.post('/',   courseController.create);
+// list all courses
+router.get('/', courseController.getAll);
 
-// Delete a course
+// create a new course
+router.post('/', courseController.create);
+
+// delete a course
 router.delete('/:id', courseController.delete);
 
 export default router;

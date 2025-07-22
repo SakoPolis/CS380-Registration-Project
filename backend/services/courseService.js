@@ -1,49 +1,84 @@
-
 // backend/services/courseService.js
-
 import supabase from '../config/supabase.js';
 
-class courseService {
-    // Fetch all courses (or maybe only "active" ones)
+class CourseService {
     async getAll(userId) {
         const { data, error } = await supabase
-            .from('classes')
-            .select('*');
-        if (error) throw error;
-        return data;
+            .from('courses')
+            .select('id, title, description, price_cents, user_id')
+            .eq('user_id', userId);
+
+        if (error) throw new Error(error.message);
+
+        return data.map(course => ({
+            id: course.id,
+            title: course.title,
+            description: course.description,
+            priceCents: course.price_cents
+        }));
     }
 
-    // Create a new course
     async create(userId, courseData) {
         const { data, error } = await supabase
-            .from('classes')
-            .insert([{ ...courseData }])
+            .from('courses')
+            .insert([{
+                title: courseData.title,
+                description: courseData.description,
+                price_cents: courseData.price_cents,
+                user_id: userId
+            }])
+            .select()
             .single();
-        if (error) throw error;
-        return data;
+
+        if (error) throw new Error(error.message);
+
+        return {
+            id: data.id,
+            title: data.title,
+            description: data.description,
+            priceCents: data.price_cents
+        };
     }
 
-    // Update an existing course
-    async update(userId, courseId, updates) {
+    async update(userId, id, updates) {
+        const { data: courseData, error: courseError } = await supabase
+            .from('courses')
+            .select('id, user_id')
+            .eq('id', id)
+            .eq('user_id', userId)
+            .single();
+
+        if (courseError || !courseData) {
+            throw new Error('Course not found or not authorized');
+        }
+
         const { data, error } = await supabase
-            .from('classes')
+            .from('courses')
             .update(updates)
-            .eq('id', courseId)
+            .eq('id', id)
+            .select()
             .single();
-        if (error) throw error;
-        return data;
+
+        if (error) throw new Error(error.message);
+
+        return {
+            id: data.id,
+            title: data.title,
+            description: data.description,
+            priceCents: data.price_cents
+        };
     }
 
-    // Delete (or deactivate) a course
-    async remove(userId, courseId) {
-        const { data, error } = await supabase
-            .from('classes')
+    async delete(id) {
+        const { error } = await supabase
+            .from('courses')
             .delete()
-            .eq('id', courseId)
-            .single();
-        if (error) throw error;
-        return data;
+            .eq('id', id);
+
+        if (error) throw new Error(error.message);
+
+        return { removed: true };
     }
 }
 
-export default new courseService();
+export default new CourseService();

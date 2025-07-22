@@ -1,6 +1,7 @@
+
 // controllers/baseController.js
 
-export default class baseController {
+export default class BaseController {
     constructor(service) {
         this.service = service;
         this.getAll = this.getAll.bind(this);
@@ -19,8 +20,8 @@ export default class baseController {
 
     async create(req, res, next) {
         try {
-            const items = await this.service.create(req.user.id, req.body);
-            res.status(201).json(items);
+            const item = await this.service.create(req.user.id, req.body);
+            res.status(201).json(item);
         } catch (err) {
             next(err);
         }
@@ -28,11 +29,10 @@ export default class baseController {
 
     async delete(req, res, next) {
         try {
-            const items = await this.service.delete(req.user.id, req.params.id);
-            res.status(204).json(items);
+            await this.service.delete(req.params.id);
+            res.status(204).send();
         } catch (err) {
             next(err);
         }
     }
-
 }

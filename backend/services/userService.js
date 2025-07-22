@@ -3,35 +3,34 @@
 
 import supabase from '../config/supabase.js';
 
-class userService {
-    async signUp(email, password, firstName, lastName) {
-        const { data, error } = await supabase.auth.signUp({
+class UserService {
+    async signUp(email, password) {
+        const { data: { user }, error } = await supabase.auth.signUp({
             email,
             password,
-            options: { data: { firstName, lastName } },
         });
         if (error) throw new Error(error.message);
-        return data;
+        return user;
     }
 
     async signIn(email, password) {
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { data: { session }, error } = await supabase.auth.signInWithPassword({
             email,
             password,
         });
         if (error) throw new Error(error.message);
-        return data;
+        return session;
     }
 
-    async getUser(userId) {
+    async getUser(id) {
         const { data, error } = await supabase
             .from('users')
             .select('*')
-            .eq('id', userId)
+            .eq('id', id)
             .single();
         if (error) throw new Error(error.message);
         return data;
     }
 }
 
-export default new userService();
+export default new UserService();

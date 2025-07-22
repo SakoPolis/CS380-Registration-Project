@@ -8,6 +8,20 @@
   },
   "private": true,
   "dependencies": {
-    "@supabase/supabase-js": "^2.51.0"
-  }
+    "@supabase/supabase-js": "^2.52.0",
+    "dotenv": "^17.2.0",
+    "express": "^5.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CS380-Group/CS380-Registration-Project.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/CS380-Group/CS380-Registration-Project/issues"
+  },
+  "homepage": "https://github.com/CS380-Group/CS380-Registration-Project#readme"
 }
