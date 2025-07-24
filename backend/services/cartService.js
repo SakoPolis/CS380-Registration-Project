@@ -37,6 +37,7 @@ class CartService {
             }
         }));
     }
+
     async add(supabase, userId, cartData) {
         const { data: slotData, error: slotError } = await supabase
             .from('class_slots')
@@ -52,14 +53,40 @@ class CartService {
         if (error) throw new Error(error.message);
         return { id: data.id, slotId: data.slot_id, classDate: data.class_date, addedAt: data.added_at };
     }
+
     async delete(supabase, userId, itemId) {
+        const { data: deleted, error } = await supabase
+            .from('cart_items')
+            .delete()
+            .eq('id', itemId) // match cart item by its id
+            .eq('user_id', userId) // match the user id
+            .select(`
+                slot_id,
+                class_date,
+                class_slots (
+                  id,
+                  day_of_week,
+                  group_type
+                )
+              `)
+            .single();
+        if (error) throw new Error(error.message);
+
+        return {
+            slotId:    deleted.slot_id,
+            classDate: deleted.class_date,
+            dayOfWeek: deleted.class_slots.day_of_week,
+            groupType: deleted.class_slots.group_type
+        };
+    }
+
+    async clear(supabase, userId) {
         const { error } = await supabase
             .from('cart_items')
             .delete()
-            .eq('id', itemId)
             .eq('user_id', userId);
         if (error) throw new Error(error.message);
-        return { removed: true };
+        return { cleared: true };
     }
 }
 export default new CartService();

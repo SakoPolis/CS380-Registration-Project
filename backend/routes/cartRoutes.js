@@ -13,5 +13,7 @@ router.get('/', authenticate, CartController.getAll);
 router.post('/', authenticate, CartController.add);
 // Remove item from cart
 router.delete('/:id', authenticate, CartController.delete);
+// Clear Cart
+router.delete('/',     authenticate, CartController.clear);
 
 export default router;
