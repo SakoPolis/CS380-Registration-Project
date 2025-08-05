@@ -1,5 +1,5 @@
 
-// backend/models/Purchase.js
+// backend/models/purchase.js
 
 import { makeSupabaseClient } from '../config/supabase.js';
 
