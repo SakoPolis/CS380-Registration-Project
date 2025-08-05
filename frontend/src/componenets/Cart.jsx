@@ -1,4 +1,4 @@
-// src/components/Cart.jsx
+// src/components/Cart.js
 import React from 'react';
 import { Box, Typography, Table, TableBody, TableCell, TableRow, Button } from '@mui/material';
 import { useCart } from './CartContext';
