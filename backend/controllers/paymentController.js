@@ -1,6 +1,8 @@
 // backend/controllers/paymentController.js
 
 import PaymentService from '../services/paymentService.js';
+import { sendConfirmationEmail } from '../utilities/sendConfirmationEmail.js';
+
 class PaymentController {
 
     async checkout(req, res, next) {
@@ -8,8 +10,18 @@ class PaymentController {
         try {
 
             const r = await PaymentService.checkout(req.supabase, req.user.id, req.body);
-            res.json(r);
 
+            console.log('DEBUG: checkout result ->', r);
+            console.log('DEBUG: user info ->', req.user);
+
+
+            const userEmail = req.user.email;
+
+            const classDetails = r.classes || [];
+
+            await sendConfirmationEmail(userEmail, classDetails);
+
+            res.json(r);
         } catch(e) { next(e); }
     }
 
