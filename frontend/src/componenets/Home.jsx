@@ -4,9 +4,11 @@ import { Container, Typography } from "@mui/material";
 const Home = () => {
     return (
         <Container>
-            <Typography variant="h2" gutterBottom>
-                Welcome
-            </Typography>
+            <img
+                src="/potterytwo.png"
+                alt="Pottery Times"
+                style={{ maxWidth: "100%", height: "auto" }}
+            />
             <Typography variant="body1">Home Page</Typography>
         </Container>
     );
