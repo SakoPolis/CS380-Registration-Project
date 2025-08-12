@@ -1,7 +1,7 @@
-// src/index.jsx
+// index.jsx
 
 import React from "react";
-import ReactDOM from "react-dom/client";
+import ReactDOM from "react-dom/client"; //
 import App from "./App";
 import { CartProvider } from "./contexts/CartContext";
 
