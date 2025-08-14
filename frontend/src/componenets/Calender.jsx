@@ -1,3 +1,26 @@
+/**
+ * @file Calender.jsx
+ * @module Calendar
+ * @date 2025-08-13
+ * @description
+ *   Interactive class schedule calendar allowing date selection and adding classes to cart.
+ *
+ * @function generateCalendar
+ * @description Generates days for the current month with full weeks.
+ * @returns {void}
+ *
+ * @function handleDayClick
+ * @description Sets selected date and resets selected schedule.
+ * @param {object} day - Date object and weekday string.
+ *
+ * @function handleAddToCart
+ * @description Adds selected schedule to cart and shows snackbar confirmation.
+ */
+
+
+
+
+
 import React, { useState, useEffect } from 'react';
 import { Box, Grid, Typography, Button, Paper, Table, TableBody, TableCell, TableRow, Radio, Snackbar, SnackbarContent } from '@mui/material';
 import { useCart } from './CartContext';

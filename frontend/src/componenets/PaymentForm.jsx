@@ -1,3 +1,24 @@
+/**
+ * @file PaymentForm.jsx
+ * @module PaymentForm
+ * @date 2025-08-13
+ * @description
+ *   Handles credit card or bank transfer payment details.
+ *
+ * @function handleCardNumberChange
+ * @description Formats and validates credit card number input.
+ *
+ * @function handleCvvChange
+ * @description Formats and validates CVV input.
+ *
+ * @function handleExpirationDateChange
+ * @description Formats and validates expiration date.
+ */
+
+
+
+
+
 import * as React from 'react';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';

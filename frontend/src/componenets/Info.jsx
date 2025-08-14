@@ -1,3 +1,18 @@
+/**
+ * @file Info.jsx
+ * @module Info
+ * @date 2025-08-13
+ * @description
+ *   Displays a summary of product names, descriptions, and prices.
+ *
+ * @component
+ * @param {string} totalPrice - The total order price.
+ */
+
+
+
+
+
 import * as React from 'react';
 import PropTypes from 'prop-types';
 import List from '@mui/material/List';

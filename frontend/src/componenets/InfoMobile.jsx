@@ -1,3 +1,17 @@
+/**
+ * @file InfoMobile.jsx
+ * @module InfoMobile
+ * @date 2025-08-13
+ * @description
+ *   Mobile-friendly drawer component for displaying order summary.
+ *
+ * @param {string} totalPrice - The total order price.
+ */
+
+
+
+
+
 import * as React from 'react';
 import PropTypes from 'prop-types';
 import Box from '@mui/material/Box';

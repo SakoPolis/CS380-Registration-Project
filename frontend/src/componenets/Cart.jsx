@@ -1,3 +1,29 @@
+/**
+ * @file Cart.jsx
+ * @module Cart
+ * @date 2025-08-13
+ * @author Talin
+ * @description
+ *   Displays shopping cart items, allows removal, clearing, and navigation to checkout.
+ *
+ * @component
+ * @example
+ * return <Cart />;
+ *
+ * @function removeFromCart
+ * @description Removes an item by ID from the cart.
+ * @param {string|number} itemId - Unique item identifier.
+ * @returns {void}
+ *
+ * @function clearCart
+ * @description Empties the cart of all items.
+ * @returns {void}
+ */
+
+
+
+
+
 // src/components/Cart.jsx
 import React from 'react';
 import { Box, Typography, Table, TableBody, TableCell, TableRow, Button } from '@mui/material';

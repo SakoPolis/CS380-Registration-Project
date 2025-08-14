@@ -1,3 +1,33 @@
+/**
+ * @file SignUp.jsx
+ * @module SignUp
+ * @date 2025-08-13
+ * @author Talin
+ * @description
+ *   React component for user registration using Supabase authentication.
+ *   Collects user name, email, and password, validates input, and submits to backend.
+ *
+ * @component
+ * @example
+ * return <SignUp />;
+ *
+ * @function handleChange
+ * @description Updates form state when input fields change.
+ * @param {object} event - Change event from input.
+ * @returns {void}
+ *
+ * @function validate
+ * @description Validates name, email, and password fields.
+ * @returns {boolean} True if all fields are valid, otherwise false.
+ *
+ * @function handleSubmit
+ * @description Submits signup form data to Supabase, navigates to home on success.
+ * @param {object} e - Form submit event.
+ * @returns {Promise<void>}
+ */
+
+
+
 // src/SignUp.jsx
 
 import React, { useState } from 'react';

@@ -1,3 +1,19 @@
+/**
+ * @file AddressForm.jsx
+ * @module AddressForm
+ * @date 2025-08-13
+ * @description
+ *   Renders form fields for entering shipping address.
+ *
+ * @component
+ * @example
+ * return <AddressForm />;
+ */
+
+
+
+
+
 //AddressForm.jsx
 import * as React from 'react';
 import Checkbox from '@mui/material/Checkbox';

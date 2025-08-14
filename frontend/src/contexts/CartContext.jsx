@@ -1,3 +1,21 @@
+/**
+ * @file CartContext.jsx
+ * @module CartContext
+ * @date 2025-08-13
+ * @description
+ *   Provides global cart state management using React Context API.
+ *
+ * @function addToCart
+ * @description Adds an item to cart via API and updates local state.
+ *
+ * @function removeFromCart
+ * @description Removes an item by ID from cart via API.
+ */
+
+
+
+
+
 import React, { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
 

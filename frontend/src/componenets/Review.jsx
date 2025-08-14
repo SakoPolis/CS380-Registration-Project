@@ -1,3 +1,19 @@
+/**
+ * @file Review.jsx
+ * @module Review
+ * @date 2025-08-13
+ * @description
+ *   Displays a review of products, shipping, and payment details before order confirmation.
+ *
+ * @component
+ * @example
+ * return <Review />;
+ */
+
+
+
+
+
 import * as React from 'react';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';

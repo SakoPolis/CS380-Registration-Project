@@ -1,3 +1,22 @@
+/**
+ * @file ForgotPassword.jsx
+ * @module ForgotPassword
+ * @date 2025-08-13
+ * @description
+ *   Dialog component for requesting a password reset link.
+ *
+ * @component
+ * @example
+ * return <ForgotPassword open={true} handleClose={() => {}} />;
+ *
+ * @param {boolean} open - Whether the dialog is open.
+ * @param {Function} handleClose - Callback to close the dialog.
+ */
+
+
+
+
+
 import * as React from 'react';
 import PropTypes from 'prop-types';
 import Button from '@mui/material/Button';

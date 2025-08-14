@@ -1,3 +1,23 @@
+/**
+ * @file SignIn.jsx
+ * @module SignIn
+ * @date 2025-08-13
+ * @description
+ *   User authentication form with Supabase and saved credentials support.
+ *
+ * @function validate
+ * @description Validates email and password format.
+ * @returns {boolean}
+ *
+ * @function handleSubmit
+ * @description Authenticates user, optionally remembering credentials.
+ * @returns {Promise<void>}
+ */
+
+
+
+
+
 // SignIn.js
 
 

@@ -1,3 +1,17 @@
+/**
+ * @file SitemarkIcon.jsx
+ * @module SitemarkIcon
+ * @date 2025-08-13
+ * @description
+ *   Custom SVG icon representing the site logo.
+ *
+ * @component
+ */
+
+
+
+
+
 import * as React from 'react';
 import SvgIcon from '@mui/material/SvgIcon';
 
