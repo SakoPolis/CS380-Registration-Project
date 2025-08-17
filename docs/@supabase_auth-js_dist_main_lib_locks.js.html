@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: @supabase/auth-js/dist/main/lib/locks.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: @supabase/auth-js/dist/main/lib/locks.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.processLock = exports.navigatorLock = exports.ProcessLockAcquireTimeoutError = exports.NavigatorLockAcquireTimeoutError = exports.LockAcquireTimeoutError = exports.internals = void 0;
+const helpers_1 = require("./helpers");
+/**
+ * @experimental
+ */
+exports.internals = {
+    /**
+     * @experimental
+     */
+    debug: !!(globalThis &amp;&amp;
+        (0, helpers_1.supportsLocalStorage)() &amp;&amp;
+        globalThis.localStorage &amp;&amp;
+        globalThis.localStorage.getItem('supabase.gotrue-js.locks.debug') === 'true'),
+};
+/**
+ * An error thrown when a lock cannot be acquired after some amount of time.
+ *
+ * Use the {@link #isAcquireTimeout} property instead of checking with `instanceof`.
+ */
+class LockAcquireTimeoutError extends Error {
+    constructor(message) {
+        super(message);
+        this.isAcquireTimeout = true;
+    }
+}
+exports.LockAcquireTimeoutError = LockAcquireTimeoutError;
+class NavigatorLockAcquireTimeoutError extends LockAcquireTimeoutError {
+}
+exports.NavigatorLockAcquireTimeoutError = NavigatorLockAcquireTimeoutError;
+class ProcessLockAcquireTimeoutError extends LockAcquireTimeoutError {
+}
+exports.ProcessLockAcquireTimeoutError = ProcessLockAcquireTimeoutError;
+/**
+ * Implements a global exclusive lock using the Navigator LockManager API. It
+ * is available on all browsers released after 2022-03-15 with Safari being the
+ * last one to release support. If the API is not available, this function will
+ * throw. Make sure you check availablility before configuring {@link
+ * GoTrueClient}.
+ *
+ * You can turn on debugging by setting the `supabase.gotrue-js.locks.debug`
+ * local storage item to `true`.
+ *
+ * Internals:
+ *
+ * Since the LockManager API does not preserve stack traces for the async
+ * function passed in the `request` method, a trick is used where acquiring the
+ * lock releases a previously started promise to run the operation in the `fn`
+ * function. The lock waits for that promise to finish (with or without error),
+ * while the function will finally wait for the result anyway.
+ *
+ * @param name Name of the lock to be acquired.
+ * @param acquireTimeout If negative, no timeout. If 0 an error is thrown if
+ *                       the lock can't be acquired without waiting. If positive, the lock acquire
+ *                       will time out after so many milliseconds. An error is
+ *                       a timeout if it has `isAcquireTimeout` set to true.
+ * @param fn The operation to run once the lock is acquired.
+ */
+async function navigatorLock(name, acquireTimeout, fn) {
+    if (exports.internals.debug) {
+        console.log('@supabase/gotrue-js: navigatorLock: acquire lock', name, acquireTimeout);
+    }
+    const abortController = new globalThis.AbortController();
+    if (acquireTimeout > 0) {
+        setTimeout(() => {
+            abortController.abort();
+            if (exports.internals.debug) {
+                console.log('@supabase/gotrue-js: navigatorLock acquire timed out', name);
+            }
+        }, acquireTimeout);
+    }
+    // MDN article: https://developer.mozilla.org/en-US/docs/Web/API/LockManager/request
+    // Wrapping navigator.locks.request() with a plain Promise is done as some
+    // libraries like zone.js patch the Promise object to track the execution
+    // context. However, it appears that most browsers use an internal promise
+    // implementation when using the navigator.locks.request() API causing them
+    // to lose context and emit confusing log messages or break certain features.
+    // This wrapping is believed to help zone.js track the execution context
+    // better.
+    return await Promise.resolve().then(() => globalThis.navigator.locks.request(name, acquireTimeout === 0
+        ? {
+            mode: 'exclusive',
+            ifAvailable: true,
+        }
+        : {
+            mode: 'exclusive',
+            signal: abortController.signal,
+        }, async (lock) => {
+        if (lock) {
+            if (exports.internals.debug) {
+                console.log('@supabase/gotrue-js: navigatorLock: acquired', name, lock.name);
+            }
+            try {
+                return await fn();
+            }
+            finally {
+                if (exports.internals.debug) {
+                    console.log('@supabase/gotrue-js: navigatorLock: released', name, lock.name);
+                }
+            }
+        }
+        else {
+            if (acquireTimeout === 0) {
+                if (exports.internals.debug) {
+                    console.log('@supabase/gotrue-js: navigatorLock: not immediately available', name);
+                }
+                throw new NavigatorLockAcquireTimeoutError(`Acquiring an exclusive Navigator LockManager lock "${name}" immediately failed`);
+            }
+            else {
+                if (exports.internals.debug) {
+                    try {
+                        const result = await globalThis.navigator.locks.query();
+                        console.log('@supabase/gotrue-js: Navigator LockManager state', JSON.stringify(result, null, '  '));
+                    }
+                    catch (e) {
+                        console.warn('@supabase/gotrue-js: Error when querying Navigator LockManager state', e);
+                    }
+                }
+                // Browser is not following the Navigator LockManager spec, it
+                // returned a null lock when we didn't use ifAvailable. So we can
+                // pretend the lock is acquired in the name of backward compatibility
+                // and user experience and just run the function.
+                console.warn('@supabase/gotrue-js: Navigator LockManager returned a null lock when using #request without ifAvailable set to true, it appears this browser is not following the LockManager spec https://developer.mozilla.org/en-US/docs/Web/API/LockManager/request');
+                return await fn();
+            }
+        }
+    }));
+}
+exports.navigatorLock = navigatorLock;
+const PROCESS_LOCKS = {};
+/**
+ * Implements a global exclusive lock that works only in the current process.
+ * Useful for environments like React Native or other non-browser
+ * single-process (i.e. no concept of "tabs") environments.
+ *
+ * Use {@link #navigatorLock} in browser environments.
+ *
+ * @param name Name of the lock to be acquired.
+ * @param acquireTimeout If negative, no timeout. If 0 an error is thrown if
+ *                       the lock can't be acquired without waiting. If positive, the lock acquire
+ *                       will time out after so many milliseconds. An error is
+ *                       a timeout if it has `isAcquireTimeout` set to true.
+ * @param fn The operation to run once the lock is acquired.
+ */
+async function processLock(name, acquireTimeout, fn) {
+    var _a;
+    const previousOperation = (_a = PROCESS_LOCKS[name]) !== null &amp;&amp; _a !== void 0 ? _a : Promise.resolve();
+    const currentOperation = Promise.race([
+        previousOperation.catch(() => {
+            // ignore error of previous operation that we're waiting to finish
+            return null;
+        }),
+        acquireTimeout >= 0
+            ? new Promise((_, reject) => {
+                setTimeout(() => {
+                    reject(new ProcessLockAcquireTimeoutError(`Acquring process lock with name "${name}" timed out`));
+                }, acquireTimeout);
+            })
+            : null,
+    ].filter((x) => x))
+        .catch((e) => {
+        if (e &amp;&amp; e.isAcquireTimeout) {
+            throw e;
+        }
+        return null;
+    })
+        .then(async () => {
+        // previous operations finished and we didn't get a race on the acquire
+        // timeout, so the current operation can finally start
+        return await fn();
+    });
+    PROCESS_LOCKS[name] = currentOperation.catch(async (e) => {
+        if (e &amp;&amp; e.isAcquireTimeout) {
+            // if the current operation timed out, it doesn't mean that the previous
+            // operation finished, so we need contnue waiting for it to finish
+            await previousOperation;
+            return null;
+        }
+        throw e;
+    });
+    // finally wait for the current operation to finish successfully, with an
+    // error or with an acquire timeout error
+    return await currentOperation;
+}
+exports.processLock = processLock;
+//# sourceMappingURL=locks.js.map</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AuthWeakPasswordError.html">AuthWeakPasswordError</a></li><li><a href="CloseEvent.html">CloseEvent</a></li><li><a href="ContentDisposition.html">ContentDisposition</a></li><li><a href="Deferred.html">Deferred</a></li><li><a href="ErrorEvent.html">ErrorEvent</a></li><li><a href="Event.html">Event</a></li><li><a href="GoTrueClient.html">GoTrueClient</a></li><li><a href="Headers.html">Headers</a></li><li><a href="Limiter.html">Limiter</a></li><li><a href="LockAcquireTimeoutError.html">LockAcquireTimeoutError</a></li><li><a href="MessageEvent.html">MessageEvent</a></li><li><a href="PerMessageDeflate.html">PerMessageDeflate</a></li><li><a href="PostgrestClient.html">PostgrestClient</a></li><li><a href="PostgrestError.html">PostgrestError</a></li><li><a href="Push.html">Push</a></li><li><a href="RealtimeChannel.html">RealtimeChannel</a></li><li><a href="RealtimeClient.html">RealtimeClient</a></li><li><a href="RealtimePresence.html">RealtimePresence</a></li><li><a href="Receiver.html">Receiver</a></li><li><a href="Request.html">Request</a></li><li><a href="Response.html">Response</a></li><li><a href="Sender.html">Sender</a></li><li><a href="SupabaseClient.html">SupabaseClient</a></li><li><a href="Timer.html">Timer</a></li><li><a href="TokenData.html">TokenData</a></li><li><a href="WebSocket.html">WebSocket</a></li><li><a href="WebSocketServer.html">WebSocketServer</a></li><li><a href="module.html#.exports">exports</a></li><li><a href="module.exports_module.exports.html">exports</a></li></ul><h3>Mixins</h3><ul><li><a href="EventTarget.html">EventTarget</a></li></ul><h3>Global</h3><ul><li><a href="global.html"></a></li><li><a href="global.html#$defineProperty">$defineProperty</a></li><li><a href="global.html#$gOPD">$gOPD</a></li><li><a href="global.html#$indexOf">$indexOf</a></li><li><a href="global.html#$mapDelete">$mapDelete</a></li><li><a href="global.html#$mapGet">$mapGet</a></li><li><a href="global.html#$mapHas">$mapHas</a></li><li><a href="global.html#$mapSet">$mapSet</a></li><li><a href="global.html#$mapSize">$mapSize</a></li><li><a href="global.html#$weakMapDelete">$weakMapDelete</a></li><li><a href="global.html#$weakMapGet">$weakMapGet</a></li><li><a href="global.html#$weakMapHas">$weakMapHas</a></li><li><a href="global.html#$weakMapSet">$weakMapSet</a></li><li><a href="global.html#API_VERSION_REGEX">API_VERSION_REGEX</a></li><li><a href="global.html#AUTO_REFRESH_TICK_DURATION_MS">AUTO_REFRESH_TICK_DURATION_MS</a></li><li><a href="global.html#AUTO_REFRESH_TICK_THRESHOLD">AUTO_REFRESH_TICK_THRESHOLD</a></li><li><a href="global.html#AbortError">AbortError</a></li><li><a href="global.html#Accepts">Accepts</a></li><li><a href="global.html#Body">Body</a></li><li><a href="global.html#DeprecationError">DeprecationError</a></li><li><a href="global.html#FIELD_NAME_REGEXP">FIELD_NAME_REGEXP</a></li><li><a href="global.html#FIRST_CHAR_REGEXP">FIRST_CHAR_REGEXP</a></li><li><a href="global.html#FROM_BASE64URL">FROM_BASE64URL</a></li><li><a href="global.html#FetchError">FetchError</a></li><li><a href="global.html#GLOBAL_JWKS">GLOBAL_JWKS</a></li><li><a href="global.html#IGNORE_BASE64URL">IGNORE_BASE64URL</a></li><li><a href="global.html#MediaType">MediaType</a></li><li><a href="global.html#Negotiator">Negotiator</a></li><li><a href="global.html#PARAM_REGEXP">PARAM_REGEXP</a></li><li><a href="global.html#QESC_REGEXP">QESC_REGEXP</a></li><li><a href="global.html#QUOTE_REGEXP">QUOTE_REGEXP</a></li><li><a href="global.html#Route">Route</a></li><li><a href="global.html#Router">Router</a></li><li><a href="global.html#SUBTYPE_NAME_REGEXP">SUBTYPE_NAME_REGEXP</a></li><li><a href="global.html#TO_BASE64URL">TO_BASE64URL</a></li><li><a href="global.html#TYPE_REGEXP">TYPE_REGEXP</a></li><li><a href="global.html#View">View</a></li><li><a href="global.html#__loadSession">__loadSession</a></li><li><a href="global.html#_acquireLock">_acquireLock</a></li><li><a href="global.html#_appendParams">_appendParams</a></li><li><a href="global.html#_autoRefreshTokenTick">_autoRefreshTokenTick</a></li><li><a href="global.html#_canPush">_canPush</a></li><li><a href="global.html#_challenge">_challenge</a></li><li><a href="global.html#_challengeAndVerify">_challengeAndVerify</a></li><li><a href="global.html#_fetchWithTimeout">_fetchWithTimeout</a></li><li><a href="global.html#_getAuthenticatorAssuranceLevel">_getAuthenticatorAssuranceLevel</a></li><li><a href="global.html#_getPayloadRecords">_getPayloadRecords</a></li><li><a href="global.html#_getSessionFromURL">_getSessionFromURL</a></li><li><a href="global.html#_getUrlForProvider">_getUrlForProvider</a></li><li><a href="global.html#_handleVisibilityChange">_handleVisibilityChange</a></li><li><a href="global.html#_initialize">_initialize</a></li><li><a href="global.html#_isClosed">_isClosed</a></li><li><a href="global.html#_isImplicitGrantCallback">_isImplicitGrantCallback</a></li><li><a href="global.html#_isJoined">_isJoined</a></li><li><a href="global.html#_isJoining">_isJoining</a></li><li><a href="global.html#_isLeaving">_isLeaving</a></li><li><a href="global.html#_isMember">_isMember</a></li><li><a href="global.html#_isPKCECallback">_isPKCECallback</a></li><li><a href="global.html#_isValidUTF8">_isValidUTF8</a></li><li><a href="global.html#_joinRef">_joinRef</a></li><li><a href="global.html#_leaveOpenTopic">_leaveOpenTopic</a></li><li><a href="global.html#_listFactors">_listFactors</a></li><li><a href="global.html#_makeRef">_makeRef</a></li><li><a href="global.html#_mask">_mask</a></li><li><a href="global.html#_off">_off</a></li><li><a href="global.html#_on">_on</a></li><li><a href="global.html#_onClose">_onClose</a></li><li><a href="global.html#_onConnClose">_onConnClose</a></li><li><a href="global.html#_onConnError">_onConnError</a></li><li><a href="global.html#_onConnMessage">_onConnMessage</a></li><li><a href="global.html#_onConnOpen">_onConnOpen</a></li><li><a href="global.html#_onError">_onError</a></li><li><a href="global.html#_onMessage">_onMessage</a></li><li><a href="global.html#_onVisibilityChanged">_onVisibilityChanged</a></li><li><a href="global.html#_push">_push</a></li><li><a href="global.html#_recoverAndRefresh">_recoverAndRefresh</a></li><li><a href="global.html#_refreshAccessToken">_refreshAccessToken</a></li><li><a href="global.html#_rejoin">_rejoin</a></li><li><a href="global.html#_rejoinUntilConnected">_rejoinUntilConnected</a></li><li><a href="global.html#_remove">_remove</a></li><li><a href="global.html#_removeVisibilityChangedCallback">_removeVisibilityChangedCallback</a></li><li><a href="global.html#_replyEventName">_replyEventName</a></li><li><a href="global.html#_saveSession">_saveSession</a></li><li><a href="global.html#_startAutoRefresh">_startAutoRefresh</a></li><li><a href="global.html#_startHeartbeat">_startHeartbeat</a></li><li><a href="global.html#_startWorkerHeartbeat">_startWorkerHeartbeat</a></li><li><a href="global.html#_stopAutoRefresh">_stopAutoRefresh</a></li><li><a href="global.html#_trigger">_trigger</a></li><li><a href="global.html#_triggerChanError">_triggerChanError</a></li><li><a href="global.html#_unmask">_unmask</a></li><li><a href="global.html#_useSession">_useSession</a></li><li><a href="global.html#_verify">_verify</a></li><li><a href="global.html#acceptParams">acceptParams</a></li><li><a href="global.html#alladdrs">alladdrs</a></li><li><a href="global.html#app">app</a></li><li><a href="global.html#append">append</a></li><li><a href="global.html#application">application</a></li><li><a href="global.html#base64UrlToUint8Array">base64UrlToUint8Array</a></li><li><a href="global.html#basePath">basePath</a></li><li><a href="global.html#bodyParser">bodyParser</a></li><li><a href="global.html#byteFromBase64URL">byteFromBase64URL</a></li><li><a href="global.html#byteToBase64URL">byteToBase64URL</a></li><li><a href="global.html#bytes">bytes</a></li><li><a href="global.html#callSiteLocation">callSiteLocation</a></li><li><a href="global.html#channel">channel</a></li><li><a href="global.html#charset">charset</a></li><li><a href="global.html#clone">clone</a></li><li><a href="global.html#cloneDeep">cloneDeep</a></li><li><a href="global.html#codepointToUTF8">codepointToUTF8</a></li><li><a href="global.html#colors">colors</a></li><li><a href="global.html#compile">compile</a></li><li><a href="global.html#compileETag">compileETag</a></li><li><a href="global.html#compileQueryParser">compileQueryParser</a></li><li><a href="global.html#compileTrust">compileTrust</a></li><li><a href="global.html#concat">concat</a></li><li><a href="global.html#connect">connect</a></li><li><a href="global.html#connectionState">connectionState</a></li><li><a href="global.html#consumeBody">consumeBody</a></li><li><a href="global.html#containsDotFile">containsDotFile</a></li><li><a href="global.html#containsNamespace">containsNamespace</a></li><li><a href="global.html#contentDisposition">contentDisposition</a></li><li><a href="global.html#contentRange">contentRange</a></li><li><a href="global.html#contentType">contentType</a></li><li><a href="global.html#contentstream">contentstream</a></li><li><a href="global.html#convertBody">convertBody</a></li><li><a href="global.html#convertCell">convertCell</a></li><li><a href="global.html#convertChangeData">convertChangeData</a></li><li><a href="global.html#convertColumn">convertColumn</a></li><li><a href="global.html#convertDataDescriptorToAccessor">convertDataDescriptorToAccessor</a></li><li><a href="global.html#cookieNameRegExp">cookieNameRegExp</a></li><li><a href="global.html#cookieValueRegExp">cookieValueRegExp</a></li><li><a href="global.html#copy">copy</a></li><li><a href="global.html#createApplication">createApplication</a></li><li><a href="global.html#createArgumentsString">createArgumentsString</a></li><li><a href="global.html#createBucket">createBucket</a></li><li><a href="global.html#createClient">createClient</a></li><li><a href="global.html#createDecompressionStream">createDecompressionStream</a></li><li><a href="global.html#createError">createError</a></li><li><a href="global.html#createHeadersLenient">createHeadersLenient</a></li><li><a href="global.html#createQueryParser">createQueryParser</a></li><li><a href="global.html#createSignedUploadUrl">createSignedUploadUrl</a></li><li><a href="global.html#createSignedUrl">createSignedUrl</a></li><li><a href="global.html#createSignedUrls">createSignedUrls</a></li><li><a href="global.html#createStackString">createStackString</a></li><li><a href="global.html#createUser">createUser</a></li><li><a href="global.html#createWebSocketStream">createWebSocketStream</a></li><li><a href="global.html#crypto">crypto</a></li><li><a href="global.html#debug">debug</a></li><li><a href="global.html#decode">decode</a></li><li><a href="global.html#deepClone">deepClone</a></li><li><a href="global.html#defaultMessage">defaultMessage</a></li><li><a href="global.html#deleteBucket">deleteBucket</a></li><li><a href="global.html#deleteUser">deleteUser</a></li><li><a href="global.html#depd">depd</a></li><li><a href="global.html#disconnect">disconnect</a></li><li><a href="global.html#domainValueRegExp">domainValueRegExp</a></li><li><a href="global.html#download">download</a></li><li><a href="global.html#dump">dump</a></li><li><a href="global.html#emptyBucket">emptyBucket</a></li><li><a href="global.html#encodeUrl">encodeUrl</a></li><li><a href="global.html#endpointURL">endpointURL</a></li><li><a href="global.html#escape">escape</a></li><li><a href="global.html#escapeHtml">escapeHtml</a></li><li><a href="global.html#escapeText">escapeText</a></li><li><a href="global.html#etag">etag</a></li><li><a href="global.html#exchangeCodeForSession">exchangeCodeForSession</a></li><li><a href="global.html#exists">exists</a></li><li><a href="global.html#exportNodeCompatibleHeaders">exportNodeCompatibleHeaders</a></li><li><a href="global.html#extension">extension</a></li><li><a href="global.html#extractContentType">extractContentType</a></li><li><a href="global.html#fetch">fetch</a></li><li><a href="global.html#finalhandler">finalhandler</a></li><li><a href="global.html#find">find</a></li><li><a href="global.html#first">first</a></li><li><a href="global.html#flatten">flatten</a></li><li><a href="global.html#flushSendBuffer">flushSendBuffer</a></li><li><a href="global.html#fmtLong">fmtLong</a></li><li><a href="global.html#fmtShort">fmtShort</a></li><li><a href="global.html#format">format</a></li><li><a href="global.html#formatArgs">formatArgs</a></li><li><a href="global.html#formatColor">formatColor</a></li><li><a href="global.html#formatLocation">formatLocation</a></li><li><a href="global.html#formatPlain">formatPlain</a></li><li><a href="global.html#forwarded">forwarded</a></li><li><a href="global.html#fresh">fresh</a></li><li><a href="global.html#from">from</a></li><li><a href="global.html#functions">functions</a></li><li><a href="global.html#generateLink">generateLink</a></li><li><a href="global.html#getBucket">getBucket</a></li><li><a href="global.html#getChannels">getChannels</a></li><li><a href="global.html#getCharset">getCharset</a></li><li><a href="global.html#getClaims">getClaims</a></li><li><a href="global.html#getNodeRequestOptions">getNodeRequestOptions</a></li><li><a href="global.html#getPublicUrl">getPublicUrl</a></li><li><a href="global.html#getRawBody">getRawBody</a></li><li><a href="global.html#getSession">getSession</a></li><li><a href="global.html#getStack">getStack</a></li><li><a href="global.html#getTotalBytes">getTotalBytes</a></li><li><a href="global.html#getUser">getUser</a></li><li><a href="global.html#getUserById">getUserById</a></li><li><a href="global.html#getUserIdentities">getUserIdentities</a></li><li><a href="global.html#hasSession">hasSession</a></li><li><a href="global.html#hasbody">hasbody</a></li><li><a href="global.html#inPendingSyncState">inPendingSyncState</a></li><li><a href="global.html#info">info</a></li><li><a href="global.html#init">init</a></li><li><a href="global.html#initialize">initialize</a></li><li><a href="global.html#inspectOpts">inspectOpts</a></li><li><a href="global.html#internals">internals</a></li><li><a href="global.html#invalidTokenRegex">invalidTokenRegex</a></li><li><a href="global.html#inviteUserByEmail">inviteUserByEmail</a></li><li><a href="global.html#isBlob">isBlob</a></li><li><a href="global.html#isConnected">isConnected</a></li><li><a href="global.html#isEqual">isEqual</a></li><li><a href="global.html#isFinished">isFinished</a></li><li><a href="global.html#isRequest">isRequest</a></li><li><a href="global.html#isSameProtocol">isSameProtocol</a></li><li><a href="global.html#isURLSearchParams">isURLSearchParams</a></li><li><a href="global.html#isValidStatusCode">isValidStatusCode</a></li><li><a href="global.html#isignored">isignored</a></li><li><a href="global.html#isstats">isstats</a></li><li><a href="global.html#istraced">istraced</a></li><li><a href="global.html#json">json</a></li><li><a href="global.html#jwks">jwks</a></li><li><a href="global.html#lexer">lexer</a></li><li><a href="global.html#linkIdentity">linkIdentity</a></li><li><a href="global.html#list">list</a></li><li><a href="global.html#listBuckets">listBuckets</a></li><li><a href="global.html#listDelete">listDelete</a></li><li><a href="global.html#listGet">listGet</a></li><li><a href="global.html#listGetNode">listGetNode</a></li><li><a href="global.html#listHas">listHas</a></li><li><a href="global.html#listSet">listSet</a></li><li><a href="global.html#listUsers">listUsers</a></li><li><a href="global.html#load">load</a></li><li><a href="global.html#localstorage">localstorage</a></li><li><a href="global.html#log">log</a></li><li><a href="global.html#lookup">lookup</a></li><li><a href="global.html#loosen">loosen</a></li><li><a href="global.html#map">map</a></li><li><a href="global.html#match">match</a></li><li><a href="global.html#memoryLocalStorageAdapter">memoryLocalStorageAdapter</a></li><li><a href="global.html#methods">methods</a></li><li><a href="global.html#mimeMatch">mimeMatch</a></li><li><a href="global.html#move">move</a></li><li><a href="global.html#navigatorLock">navigatorLock</a></li><li><a href="global.html#normalize">normalize</a></li><li><a href="global.html#normalizeJsonSyntaxError">normalizeJsonSyntaxError</a></li><li><a href="global.html#normalizeOptions">normalizeOptions</a></li><li><a href="global.html#normalizeType">normalizeType</a></li><li><a href="global.html#normalizeTypes">normalizeTypes</a></li><li><a href="global.html#obj">obj</a></li><li><a href="global.html#onAuthStateChange">onAuthStateChange</a></li><li><a href="global.html#onFinished">onFinished</a></li><li><a href="global.html#onJoin">onJoin</a></li><li><a href="global.html#onLeave">onLeave</a></li><li><a href="global.html#onSync">onSync</a></li><li><a href="global.html#originalurl">originalurl</a></li><li><a href="global.html#parameterCount">parameterCount</a></li><li><a href="global.html#parse">parse</a></li><li><a href="global.html#parseParametersFromURL">parseParametersFromURL</a></li><li><a href="global.html#parseURL">parseURL</a></li><li><a href="global.html#parseurl">parseurl</a></li><li><a href="global.html#pathValueRegExp">pathValueRegExp</a></li><li><a href="global.html#plural">plural</a></li><li><a href="global.html#polyfillGlobalThis">polyfillGlobalThis</a></li><li><a href="global.html#preferredCharsets">preferredCharsets</a></li><li><a href="global.html#preferredEncodings">preferredEncodings</a></li><li><a href="global.html#preferredLanguages">preferredLanguages</a></li><li><a href="global.html#preferredMediaTypes">preferredMediaTypes</a></li><li><a href="global.html#prepareObjectStackTrace">prepareObjectStackTrace</a></li><li><a href="global.html#processLock">processLock</a></li><li><a href="global.html#proxyaddr">proxyaddr</a></li><li><a href="global.html#push">push</a></li><li><a href="global.html#rangeParser">rangeParser</a></li><li><a href="global.html#raw">raw</a></li><li><a href="global.html#readStream">readStream</a></li><li><a href="global.html#reauthenticate">reauthenticate</a></li><li><a href="global.html#refreshSession">refreshSession</a></li><li><a href="global.html#relative">relative</a></li><li><a href="global.html#remove">remove</a></li><li><a href="global.html#removeAllChannels">removeAllChannels</a></li><li><a href="global.html#removeChannel">removeChannel</a></li><li><a href="global.html#req">req</a></li><li><a href="global.html#res">res</a></li><li><a href="global.html#resend">resend</a></li><li><a href="global.html#resetPasswordForEmail">resetPasswordForEmail</a></li><li><a href="global.html#retryable">retryable</a></li><li><a href="global.html#rpc">rpc</a></li><li><a href="global.html#s">s</a></li><li><a href="global.html#save">save</a></li><li><a href="global.html#schema">schema</a></li><li><a href="global.html#send">send</a></li><li><a href="global.html#sendHeartbeat">sendHeartbeat</a></li><li><a href="global.html#sequenceToRegExp">sequenceToRegExp</a></li><li><a href="global.html#serialize">serialize</a></li><li><a href="global.html#serveStatic">serveStatic</a></li><li><a href="global.html#setAuth">setAuth</a></li><li><a href="global.html#setCharset">setCharset</a></li><li><a href="global.html#setSession">setSession</a></li><li><a href="global.html#setup">setup</a></li><li><a href="global.html#setupConnection">setupConnection</a></li><li><a href="global.html#sign">sign</a></li><li><a href="global.html#signInAnonymously">signInAnonymously</a></li><li><a href="global.html#signInWithIdToken">signInWithIdToken</a></li><li><a href="global.html#signInWithOAuth">signInWithOAuth</a></li><li><a href="global.html#signInWithOtp">signInWithOtp</a></li><li><a href="global.html#signInWithPassword">signInWithPassword</a></li><li><a href="global.html#signInWithSSO">signInWithSSO</a></li><li><a href="global.html#signInWithWeb3">signInWithWeb3</a></li><li><a href="global.html#signOut">signOut</a></li><li><a href="global.html#signUp">signUp</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#startAutoRefresh">startAutoRefresh</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#stopAutoRefresh">stopAutoRefresh</a></li><li><a href="global.html#storage">storage</a></li><li><a href="global.html#stringFromBase64URL">stringFromBase64URL</a></li><li><a href="global.html#stringFromUTF8">stringFromUTF8</a></li><li><a href="global.html#stringToBase64URL">stringToBase64URL</a></li><li><a href="global.html#stringToPath">stringToPath</a></li><li><a href="global.html#stringToUTF8">stringToUTF8</a></li><li><a href="global.html#stringify">stringify</a></li><li><a href="global.html#subscribe">subscribe</a></li><li><a href="global.html#supportsLocalStorage">supportsLocalStorage</a></li><li><a href="global.html#syncDiff">syncDiff</a></li><li><a href="global.html#syncState">syncState</a></li><li><a href="global.html#teardown">teardown</a></li><li><a href="global.html#test">test</a></li><li><a href="global.html#text">text</a></li><li><a href="global.html#toArray">toArray</a></li><li><a href="global.html#toArrayBuffer">toArrayBuffer</a></li><li><a href="global.html#toBuffer">toBuffer</a></li><li><a href="global.html#toIdentifier">toIdentifier</a></li><li><a href="global.html#toTimestampString">toTimestampString</a></li><li><a href="global.html#tokenToFunction">tokenToFunction</a></li><li><a href="global.html#transformState">transformState</a></li><li><a href="global.html#tty">tty</a></li><li><a href="global.html#typeChecker">typeChecker</a></li><li><a href="global.html#typeis">typeis</a></li><li><a href="global.html#typeofrequest">typeofrequest</a></li><li><a href="global.html#unlinkIdentity">unlinkIdentity</a></li><li><a href="global.html#unpipe">unpipe</a></li><li><a href="global.html#unsign">unsign</a></li><li><a href="global.html#unsubscribe">unsubscribe</a></li><li><a href="global.html#update">update</a></li><li><a href="global.html#updateBucket">updateBucket</a></li><li><a href="global.html#updateUser">updateUser</a></li><li><a href="global.html#updateUserById">updateUserById</a></li><li><a href="global.html#upload">upload</a></li><li><a href="global.html#uploadOrUpdate">uploadOrUpdate</a></li><li><a href="global.html#uploadToSignedUrl">uploadToSignedUrl</a></li><li><a href="global.html#urlencoded">urlencoded</a></li><li><a href="global.html#useColors">useColors</a></li><li><a href="global.html#vary">vary</a></li><li><a href="global.html#verifyOtp">verifyOtp</a></li><li><a href="global.html#wetag">wetag</a></li><li><a href="global.html#wrapfunction">wrapfunction</a></li><li><a href="global.html#wrapproperty">wrapproperty</a></li><li><a href="global.html#writeToStream">writeToStream</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Aug 13 2025 20:57:10 GMT-0700 (Pacific Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

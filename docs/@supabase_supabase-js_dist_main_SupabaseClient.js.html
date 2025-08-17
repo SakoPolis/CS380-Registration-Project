@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: @supabase/supabase-js/dist/main/SupabaseClient.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: @supabase/supabase-js/dist/main/SupabaseClient.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>"use strict";
+var __awaiter = (this &amp;&amp; this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const functions_js_1 = require("@supabase/functions-js");
+const postgrest_js_1 = require("@supabase/postgrest-js");
+const realtime_js_1 = require("@supabase/realtime-js");
+const storage_js_1 = require("@supabase/storage-js");
+const constants_1 = require("./lib/constants");
+const fetch_1 = require("./lib/fetch");
+const helpers_1 = require("./lib/helpers");
+const SupabaseAuthClient_1 = require("./lib/SupabaseAuthClient");
+/**
+ * Supabase Client.
+ *
+ * An isomorphic Javascript client for interacting with Postgres.
+ */
+class SupabaseClient {
+    /**
+     * Create a new client for use in the browser.
+     * @param supabaseUrl The unique Supabase URL which is supplied when you create a new project in your project dashboard.
+     * @param supabaseKey The unique Supabase Key which is supplied when you create a new project in your project dashboard.
+     * @param options.db.schema You can switch in between schemas. The schema needs to be on the list of exposed schemas inside Supabase.
+     * @param options.auth.autoRefreshToken Set to "true" if you want to automatically refresh the token before expiring.
+     * @param options.auth.persistSession Set to "true" if you want to automatically save the user session into local storage.
+     * @param options.auth.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
+     * @param options.realtime Options passed along to realtime-js constructor.
+     * @param options.global.fetch A custom fetch implementation.
+     * @param options.global.headers Any additional headers to send with each network request.
+     */
+    constructor(supabaseUrl, supabaseKey, options) {
+        var _a, _b, _c;
+        this.supabaseUrl = supabaseUrl;
+        this.supabaseKey = supabaseKey;
+        if (!supabaseUrl)
+            throw new Error('supabaseUrl is required.');
+        if (!supabaseKey)
+            throw new Error('supabaseKey is required.');
+        const _supabaseUrl = (0, helpers_1.ensureTrailingSlash)(supabaseUrl);
+        const baseUrl = new URL(_supabaseUrl);
+        this.realtimeUrl = new URL('realtime/v1', baseUrl);
+        this.realtimeUrl.protocol = this.realtimeUrl.protocol.replace('http', 'ws');
+        this.authUrl = new URL('auth/v1', baseUrl);
+        this.storageUrl = new URL('storage/v1', baseUrl);
+        this.functionsUrl = new URL('functions/v1', baseUrl);
+        // default storage key uses the supabase project ref as a namespace
+        const defaultStorageKey = `sb-${baseUrl.hostname.split('.')[0]}-auth-token`;
+        const DEFAULTS = {
+            db: constants_1.DEFAULT_DB_OPTIONS,
+            realtime: constants_1.DEFAULT_REALTIME_OPTIONS,
+            auth: Object.assign(Object.assign({}, constants_1.DEFAULT_AUTH_OPTIONS), { storageKey: defaultStorageKey }),
+            global: constants_1.DEFAULT_GLOBAL_OPTIONS,
+        };
+        const settings = (0, helpers_1.applySettingDefaults)(options !== null &amp;&amp; options !== void 0 ? options : {}, DEFAULTS);
+        this.storageKey = (_a = settings.auth.storageKey) !== null &amp;&amp; _a !== void 0 ? _a : '';
+        this.headers = (_b = settings.global.headers) !== null &amp;&amp; _b !== void 0 ? _b : {};
+        if (!settings.accessToken) {
+            this.auth = this._initSupabaseAuthClient((_c = settings.auth) !== null &amp;&amp; _c !== void 0 ? _c : {}, this.headers, settings.global.fetch);
+        }
+        else {
+            this.accessToken = settings.accessToken;
+            this.auth = new Proxy({}, {
+                get: (_, prop) => {
+                    throw new Error(`@supabase/supabase-js: Supabase Client is configured with the accessToken option, accessing supabase.auth.${String(prop)} is not possible`);
+                },
+            });
+        }
+        this.fetch = (0, fetch_1.fetchWithAuth)(supabaseKey, this._getAccessToken.bind(this), settings.global.fetch);
+        this.realtime = this._initRealtimeClient(Object.assign({ headers: this.headers, accessToken: this._getAccessToken.bind(this) }, settings.realtime));
+        this.rest = new postgrest_js_1.PostgrestClient(new URL('rest/v1', baseUrl).href, {
+            headers: this.headers,
+            schema: settings.db.schema,
+            fetch: this.fetch,
+        });
+        if (!settings.accessToken) {
+            this._listenForAuthEvents();
+        }
+    }
+    /**
+     * Supabase Functions allows you to deploy and invoke edge functions.
+     */
+    get functions() {
+        return new functions_js_1.FunctionsClient(this.functionsUrl.href, {
+            headers: this.headers,
+            customFetch: this.fetch,
+        });
+    }
+    /**
+     * Supabase Storage allows you to manage user-generated content, such as photos or videos.
+     */
+    get storage() {
+        return new storage_js_1.StorageClient(this.storageUrl.href, this.headers, this.fetch);
+    }
+    /**
+     * Perform a query on a table or a view.
+     *
+     * @param relation - The table or view name to query
+     */
+    from(relation) {
+        return this.rest.from(relation);
+    }
+    // NOTE: signatures must be kept in sync with PostgrestClient.schema
+    /**
+     * Select a schema to query or perform an function (rpc) call.
+     *
+     * The schema needs to be on the list of exposed schemas inside Supabase.
+     *
+     * @param schema - The schema to query
+     */
+    schema(schema) {
+        return this.rest.schema(schema);
+    }
+    // NOTE: signatures must be kept in sync with PostgrestClient.rpc
+    /**
+     * Perform a function call.
+     *
+     * @param fn - The function name to call
+     * @param args - The arguments to pass to the function call
+     * @param options - Named parameters
+     * @param options.head - When set to `true`, `data` will not be returned.
+     * Useful if you only need the count.
+     * @param options.get - When set to `true`, the function will be called with
+     * read-only access mode.
+     * @param options.count - Count algorithm to use to count rows returned by the
+     * function. Only applicable for [set-returning
+     * functions](https://www.postgresql.org/docs/current/functions-srf.html).
+     *
+     * `"exact"`: Exact but slow count algorithm. Performs a `COUNT(*)` under the
+     * hood.
+     *
+     * `"planned"`: Approximated but fast count algorithm. Uses the Postgres
+     * statistics under the hood.
+     *
+     * `"estimated"`: Uses exact count for low numbers and planned count for high
+     * numbers.
+     */
+    rpc(fn, args = {}, options = {}) {
+        return this.rest.rpc(fn, args, options);
+    }
+    /**
+     * Creates a Realtime channel with Broadcast, Presence, and Postgres Changes.
+     *
+     * @param {string} name - The name of the Realtime channel.
+     * @param {Object} opts - The options to pass to the Realtime channel.
+     *
+     */
+    channel(name, opts = { config: {} }) {
+        return this.realtime.channel(name, opts);
+    }
+    /**
+     * Returns all Realtime channels.
+     */
+    getChannels() {
+        return this.realtime.getChannels();
+    }
+    /**
+     * Unsubscribes and removes Realtime channel from Realtime client.
+     *
+     * @param {RealtimeChannel} channel - The name of the Realtime channel.
+     *
+     */
+    removeChannel(channel) {
+        return this.realtime.removeChannel(channel);
+    }
+    /**
+     * Unsubscribes and removes all Realtime channels from Realtime client.
+     */
+    removeAllChannels() {
+        return this.realtime.removeAllChannels();
+    }
+    _getAccessToken() {
+        var _a, _b;
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.accessToken) {
+                return yield this.accessToken();
+            }
+            const { data } = yield this.auth.getSession();
+            return (_b = (_a = data.session) === null || _a === void 0 ? void 0 : _a.access_token) !== null &amp;&amp; _b !== void 0 ? _b : null;
+        });
+    }
+    _initSupabaseAuthClient({ autoRefreshToken, persistSession, detectSessionInUrl, storage, storageKey, flowType, lock, debug, }, headers, fetch) {
+        const authHeaders = {
+            Authorization: `Bearer ${this.supabaseKey}`,
+            apikey: `${this.supabaseKey}`,
+        };
+        return new SupabaseAuthClient_1.SupabaseAuthClient({
+            url: this.authUrl.href,
+            headers: Object.assign(Object.assign({}, authHeaders), headers),
+            storageKey: storageKey,
+            autoRefreshToken,
+            persistSession,
+            detectSessionInUrl,
+            storage,
+            flowType,
+            lock,
+            debug,
+            fetch,
+            // auth checks if there is a custom authorizaiton header using this flag
+            // so it knows whether to return an error when getUser is called with no session
+            hasCustomAuthorizationHeader: 'Authorization' in this.headers,
+        });
+    }
+    _initRealtimeClient(options) {
+        return new realtime_js_1.RealtimeClient(this.realtimeUrl.href, Object.assign(Object.assign({}, options), { params: Object.assign({ apikey: this.supabaseKey }, options === null || options === void 0 ? void 0 : options.params) }));
+    }
+    _listenForAuthEvents() {
+        let data = this.auth.onAuthStateChange((event, session) => {
+            this._handleTokenChanged(event, 'CLIENT', session === null || session === void 0 ? void 0 : session.access_token);
+        });
+        return data;
+    }
+    _handleTokenChanged(event, source, token) {
+        if ((event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') &amp;&amp;
+            this.changedAccessToken !== token) {
+            this.changedAccessToken = token;
+        }
+        else if (event === 'SIGNED_OUT') {
+            this.realtime.setAuth();
+            if (source == 'STORAGE')
+                this.auth.signOut();
+            this.changedAccessToken = undefined;
+        }
+    }
+}
+exports.default = SupabaseClient;
+//# sourceMappingURL=SupabaseClient.js.map</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AuthWeakPasswordError.html">AuthWeakPasswordError</a></li><li><a href="CloseEvent.html">CloseEvent</a></li><li><a href="ContentDisposition.html">ContentDisposition</a></li><li><a href="Deferred.html">Deferred</a></li><li><a href="ErrorEvent.html">ErrorEvent</a></li><li><a href="Event.html">Event</a></li><li><a href="GoTrueClient.html">GoTrueClient</a></li><li><a href="Headers.html">Headers</a></li><li><a href="Limiter.html">Limiter</a></li><li><a href="LockAcquireTimeoutError.html">LockAcquireTimeoutError</a></li><li><a href="MessageEvent.html">MessageEvent</a></li><li><a href="PerMessageDeflate.html">PerMessageDeflate</a></li><li><a href="PostgrestClient.html">PostgrestClient</a></li><li><a href="PostgrestError.html">PostgrestError</a></li><li><a href="Push.html">Push</a></li><li><a href="RealtimeChannel.html">RealtimeChannel</a></li><li><a href="RealtimeClient.html">RealtimeClient</a></li><li><a href="RealtimePresence.html">RealtimePresence</a></li><li><a href="Receiver.html">Receiver</a></li><li><a href="Request.html">Request</a></li><li><a href="Response.html">Response</a></li><li><a href="Sender.html">Sender</a></li><li><a href="SupabaseClient.html">SupabaseClient</a></li><li><a href="Timer.html">Timer</a></li><li><a href="TokenData.html">TokenData</a></li><li><a href="WebSocket.html">WebSocket</a></li><li><a href="WebSocketServer.html">WebSocketServer</a></li><li><a href="module.html#.exports">exports</a></li><li><a href="module.exports_module.exports.html">exports</a></li></ul><h3>Mixins</h3><ul><li><a href="EventTarget.html">EventTarget</a></li></ul><h3>Global</h3><ul><li><a href="global.html"></a></li><li><a href="global.html#$defineProperty">$defineProperty</a></li><li><a href="global.html#$gOPD">$gOPD</a></li><li><a href="global.html#$indexOf">$indexOf</a></li><li><a href="global.html#$mapDelete">$mapDelete</a></li><li><a href="global.html#$mapGet">$mapGet</a></li><li><a href="global.html#$mapHas">$mapHas</a></li><li><a href="global.html#$mapSet">$mapSet</a></li><li><a href="global.html#$mapSize">$mapSize</a></li><li><a href="global.html#$weakMapDelete">$weakMapDelete</a></li><li><a href="global.html#$weakMapGet">$weakMapGet</a></li><li><a href="global.html#$weakMapHas">$weakMapHas</a></li><li><a href="global.html#$weakMapSet">$weakMapSet</a></li><li><a href="global.html#API_VERSION_REGEX">API_VERSION_REGEX</a></li><li><a href="global.html#AUTO_REFRESH_TICK_DURATION_MS">AUTO_REFRESH_TICK_DURATION_MS</a></li><li><a href="global.html#AUTO_REFRESH_TICK_THRESHOLD">AUTO_REFRESH_TICK_THRESHOLD</a></li><li><a href="global.html#AbortError">AbortError</a></li><li><a href="global.html#Accepts">Accepts</a></li><li><a href="global.html#Body">Body</a></li><li><a href="global.html#DeprecationError">DeprecationError</a></li><li><a href="global.html#FIELD_NAME_REGEXP">FIELD_NAME_REGEXP</a></li><li><a href="global.html#FIRST_CHAR_REGEXP">FIRST_CHAR_REGEXP</a></li><li><a href="global.html#FROM_BASE64URL">FROM_BASE64URL</a></li><li><a href="global.html#FetchError">FetchError</a></li><li><a href="global.html#GLOBAL_JWKS">GLOBAL_JWKS</a></li><li><a href="global.html#IGNORE_BASE64URL">IGNORE_BASE64URL</a></li><li><a href="global.html#MediaType">MediaType</a></li><li><a href="global.html#Negotiator">Negotiator</a></li><li><a href="global.html#PARAM_REGEXP">PARAM_REGEXP</a></li><li><a href="global.html#QESC_REGEXP">QESC_REGEXP</a></li><li><a href="global.html#QUOTE_REGEXP">QUOTE_REGEXP</a></li><li><a href="global.html#Route">Route</a></li><li><a href="global.html#Router">Router</a></li><li><a href="global.html#SUBTYPE_NAME_REGEXP">SUBTYPE_NAME_REGEXP</a></li><li><a href="global.html#TO_BASE64URL">TO_BASE64URL</a></li><li><a href="global.html#TYPE_REGEXP">TYPE_REGEXP</a></li><li><a href="global.html#View">View</a></li><li><a href="global.html#__loadSession">__loadSession</a></li><li><a href="global.html#_acquireLock">_acquireLock</a></li><li><a href="global.html#_appendParams">_appendParams</a></li><li><a href="global.html#_autoRefreshTokenTick">_autoRefreshTokenTick</a></li><li><a href="global.html#_canPush">_canPush</a></li><li><a href="global.html#_challenge">_challenge</a></li><li><a href="global.html#_challengeAndVerify">_challengeAndVerify</a></li><li><a href="global.html#_fetchWithTimeout">_fetchWithTimeout</a></li><li><a href="global.html#_getAuthenticatorAssuranceLevel">_getAuthenticatorAssuranceLevel</a></li><li><a href="global.html#_getPayloadRecords">_getPayloadRecords</a></li><li><a href="global.html#_getSessionFromURL">_getSessionFromURL</a></li><li><a href="global.html#_getUrlForProvider">_getUrlForProvider</a></li><li><a href="global.html#_handleVisibilityChange">_handleVisibilityChange</a></li><li><a href="global.html#_initialize">_initialize</a></li><li><a href="global.html#_isClosed">_isClosed</a></li><li><a href="global.html#_isImplicitGrantCallback">_isImplicitGrantCallback</a></li><li><a href="global.html#_isJoined">_isJoined</a></li><li><a href="global.html#_isJoining">_isJoining</a></li><li><a href="global.html#_isLeaving">_isLeaving</a></li><li><a href="global.html#_isMember">_isMember</a></li><li><a href="global.html#_isPKCECallback">_isPKCECallback</a></li><li><a href="global.html#_isValidUTF8">_isValidUTF8</a></li><li><a href="global.html#_joinRef">_joinRef</a></li><li><a href="global.html#_leaveOpenTopic">_leaveOpenTopic</a></li><li><a href="global.html#_listFactors">_listFactors</a></li><li><a href="global.html#_makeRef">_makeRef</a></li><li><a href="global.html#_mask">_mask</a></li><li><a href="global.html#_off">_off</a></li><li><a href="global.html#_on">_on</a></li><li><a href="global.html#_onClose">_onClose</a></li><li><a href="global.html#_onConnClose">_onConnClose</a></li><li><a href="global.html#_onConnError">_onConnError</a></li><li><a href="global.html#_onConnMessage">_onConnMessage</a></li><li><a href="global.html#_onConnOpen">_onConnOpen</a></li><li><a href="global.html#_onError">_onError</a></li><li><a href="global.html#_onMessage">_onMessage</a></li><li><a href="global.html#_onVisibilityChanged">_onVisibilityChanged</a></li><li><a href="global.html#_push">_push</a></li><li><a href="global.html#_recoverAndRefresh">_recoverAndRefresh</a></li><li><a href="global.html#_refreshAccessToken">_refreshAccessToken</a></li><li><a href="global.html#_rejoin">_rejoin</a></li><li><a href="global.html#_rejoinUntilConnected">_rejoinUntilConnected</a></li><li><a href="global.html#_remove">_remove</a></li><li><a href="global.html#_removeVisibilityChangedCallback">_removeVisibilityChangedCallback</a></li><li><a href="global.html#_replyEventName">_replyEventName</a></li><li><a href="global.html#_saveSession">_saveSession</a></li><li><a href="global.html#_startAutoRefresh">_startAutoRefresh</a></li><li><a href="global.html#_startHeartbeat">_startHeartbeat</a></li><li><a href="global.html#_startWorkerHeartbeat">_startWorkerHeartbeat</a></li><li><a href="global.html#_stopAutoRefresh">_stopAutoRefresh</a></li><li><a href="global.html#_trigger">_trigger</a></li><li><a href="global.html#_triggerChanError">_triggerChanError</a></li><li><a href="global.html#_unmask">_unmask</a></li><li><a href="global.html#_useSession">_useSession</a></li><li><a href="global.html#_verify">_verify</a></li><li><a href="global.html#acceptParams">acceptParams</a></li><li><a href="global.html#alladdrs">alladdrs</a></li><li><a href="global.html#app">app</a></li><li><a href="global.html#append">append</a></li><li><a href="global.html#application">application</a></li><li><a href="global.html#base64UrlToUint8Array">base64UrlToUint8Array</a></li><li><a href="global.html#basePath">basePath</a></li><li><a href="global.html#bodyParser">bodyParser</a></li><li><a href="global.html#byteFromBase64URL">byteFromBase64URL</a></li><li><a href="global.html#byteToBase64URL">byteToBase64URL</a></li><li><a href="global.html#bytes">bytes</a></li><li><a href="global.html#callSiteLocation">callSiteLocation</a></li><li><a href="global.html#channel">channel</a></li><li><a href="global.html#charset">charset</a></li><li><a href="global.html#clone">clone</a></li><li><a href="global.html#cloneDeep">cloneDeep</a></li><li><a href="global.html#codepointToUTF8">codepointToUTF8</a></li><li><a href="global.html#colors">colors</a></li><li><a href="global.html#compile">compile</a></li><li><a href="global.html#compileETag">compileETag</a></li><li><a href="global.html#compileQueryParser">compileQueryParser</a></li><li><a href="global.html#compileTrust">compileTrust</a></li><li><a href="global.html#concat">concat</a></li><li><a href="global.html#connect">connect</a></li><li><a href="global.html#connectionState">connectionState</a></li><li><a href="global.html#consumeBody">consumeBody</a></li><li><a href="global.html#containsDotFile">containsDotFile</a></li><li><a href="global.html#containsNamespace">containsNamespace</a></li><li><a href="global.html#contentDisposition">contentDisposition</a></li><li><a href="global.html#contentRange">contentRange</a></li><li><a href="global.html#contentType">contentType</a></li><li><a href="global.html#contentstream">contentstream</a></li><li><a href="global.html#convertBody">convertBody</a></li><li><a href="global.html#convertCell">convertCell</a></li><li><a href="global.html#convertChangeData">convertChangeData</a></li><li><a href="global.html#convertColumn">convertColumn</a></li><li><a href="global.html#convertDataDescriptorToAccessor">convertDataDescriptorToAccessor</a></li><li><a href="global.html#cookieNameRegExp">cookieNameRegExp</a></li><li><a href="global.html#cookieValueRegExp">cookieValueRegExp</a></li><li><a href="global.html#copy">copy</a></li><li><a href="global.html#createApplication">createApplication</a></li><li><a href="global.html#createArgumentsString">createArgumentsString</a></li><li><a href="global.html#createBucket">createBucket</a></li><li><a href="global.html#createClient">createClient</a></li><li><a href="global.html#createDecompressionStream">createDecompressionStream</a></li><li><a href="global.html#createError">createError</a></li><li><a href="global.html#createHeadersLenient">createHeadersLenient</a></li><li><a href="global.html#createQueryParser">createQueryParser</a></li><li><a href="global.html#createSignedUploadUrl">createSignedUploadUrl</a></li><li><a href="global.html#createSignedUrl">createSignedUrl</a></li><li><a href="global.html#createSignedUrls">createSignedUrls</a></li><li><a href="global.html#createStackString">createStackString</a></li><li><a href="global.html#createUser">createUser</a></li><li><a href="global.html#createWebSocketStream">createWebSocketStream</a></li><li><a href="global.html#crypto">crypto</a></li><li><a href="global.html#debug">debug</a></li><li><a href="global.html#decode">decode</a></li><li><a href="global.html#deepClone">deepClone</a></li><li><a href="global.html#defaultMessage">defaultMessage</a></li><li><a href="global.html#deleteBucket">deleteBucket</a></li><li><a href="global.html#deleteUser">deleteUser</a></li><li><a href="global.html#depd">depd</a></li><li><a href="global.html#disconnect">disconnect</a></li><li><a href="global.html#domainValueRegExp">domainValueRegExp</a></li><li><a href="global.html#download">download</a></li><li><a href="global.html#dump">dump</a></li><li><a href="global.html#emptyBucket">emptyBucket</a></li><li><a href="global.html#encodeUrl">encodeUrl</a></li><li><a href="global.html#endpointURL">endpointURL</a></li><li><a href="global.html#escape">escape</a></li><li><a href="global.html#escapeHtml">escapeHtml</a></li><li><a href="global.html#escapeText">escapeText</a></li><li><a href="global.html#etag">etag</a></li><li><a href="global.html#exchangeCodeForSession">exchangeCodeForSession</a></li><li><a href="global.html#exists">exists</a></li><li><a href="global.html#exportNodeCompatibleHeaders">exportNodeCompatibleHeaders</a></li><li><a href="global.html#extension">extension</a></li><li><a href="global.html#extractContentType">extractContentType</a></li><li><a href="global.html#fetch">fetch</a></li><li><a href="global.html#finalhandler">finalhandler</a></li><li><a href="global.html#find">find</a></li><li><a href="global.html#first">first</a></li><li><a href="global.html#flatten">flatten</a></li><li><a href="global.html#flushSendBuffer">flushSendBuffer</a></li><li><a href="global.html#fmtLong">fmtLong</a></li><li><a href="global.html#fmtShort">fmtShort</a></li><li><a href="global.html#format">format</a></li><li><a href="global.html#formatArgs">formatArgs</a></li><li><a href="global.html#formatColor">formatColor</a></li><li><a href="global.html#formatLocation">formatLocation</a></li><li><a href="global.html#formatPlain">formatPlain</a></li><li><a href="global.html#forwarded">forwarded</a></li><li><a href="global.html#fresh">fresh</a></li><li><a href="global.html#from">from</a></li><li><a href="global.html#functions">functions</a></li><li><a href="global.html#generateLink">generateLink</a></li><li><a href="global.html#getBucket">getBucket</a></li><li><a href="global.html#getChannels">getChannels</a></li><li><a href="global.html#getCharset">getCharset</a></li><li><a href="global.html#getClaims">getClaims</a></li><li><a href="global.html#getNodeRequestOptions">getNodeRequestOptions</a></li><li><a href="global.html#getPublicUrl">getPublicUrl</a></li><li><a href="global.html#getRawBody">getRawBody</a></li><li><a href="global.html#getSession">getSession</a></li><li><a href="global.html#getStack">getStack</a></li><li><a href="global.html#getTotalBytes">getTotalBytes</a></li><li><a href="global.html#getUser">getUser</a></li><li><a href="global.html#getUserById">getUserById</a></li><li><a href="global.html#getUserIdentities">getUserIdentities</a></li><li><a href="global.html#hasSession">hasSession</a></li><li><a href="global.html#hasbody">hasbody</a></li><li><a href="global.html#inPendingSyncState">inPendingSyncState</a></li><li><a href="global.html#info">info</a></li><li><a href="global.html#init">init</a></li><li><a href="global.html#initialize">initialize</a></li><li><a href="global.html#inspectOpts">inspectOpts</a></li><li><a href="global.html#internals">internals</a></li><li><a href="global.html#invalidTokenRegex">invalidTokenRegex</a></li><li><a href="global.html#inviteUserByEmail">inviteUserByEmail</a></li><li><a href="global.html#isBlob">isBlob</a></li><li><a href="global.html#isConnected">isConnected</a></li><li><a href="global.html#isEqual">isEqual</a></li><li><a href="global.html#isFinished">isFinished</a></li><li><a href="global.html#isRequest">isRequest</a></li><li><a href="global.html#isSameProtocol">isSameProtocol</a></li><li><a href="global.html#isURLSearchParams">isURLSearchParams</a></li><li><a href="global.html#isValidStatusCode">isValidStatusCode</a></li><li><a href="global.html#isignored">isignored</a></li><li><a href="global.html#isstats">isstats</a></li><li><a href="global.html#istraced">istraced</a></li><li><a href="global.html#json">json</a></li><li><a href="global.html#jwks">jwks</a></li><li><a href="global.html#lexer">lexer</a></li><li><a href="global.html#linkIdentity">linkIdentity</a></li><li><a href="global.html#list">list</a></li><li><a href="global.html#listBuckets">listBuckets</a></li><li><a href="global.html#listDelete">listDelete</a></li><li><a href="global.html#listGet">listGet</a></li><li><a href="global.html#listGetNode">listGetNode</a></li><li><a href="global.html#listHas">listHas</a></li><li><a href="global.html#listSet">listSet</a></li><li><a href="global.html#listUsers">listUsers</a></li><li><a href="global.html#load">load</a></li><li><a href="global.html#localstorage">localstorage</a></li><li><a href="global.html#log">log</a></li><li><a href="global.html#lookup">lookup</a></li><li><a href="global.html#loosen">loosen</a></li><li><a href="global.html#map">map</a></li><li><a href="global.html#match">match</a></li><li><a href="global.html#memoryLocalStorageAdapter">memoryLocalStorageAdapter</a></li><li><a href="global.html#methods">methods</a></li><li><a href="global.html#mimeMatch">mimeMatch</a></li><li><a href="global.html#move">move</a></li><li><a href="global.html#navigatorLock">navigatorLock</a></li><li><a href="global.html#normalize">normalize</a></li><li><a href="global.html#normalizeJsonSyntaxError">normalizeJsonSyntaxError</a></li><li><a href="global.html#normalizeOptions">normalizeOptions</a></li><li><a href="global.html#normalizeType">normalizeType</a></li><li><a href="global.html#normalizeTypes">normalizeTypes</a></li><li><a href="global.html#obj">obj</a></li><li><a href="global.html#onAuthStateChange">onAuthStateChange</a></li><li><a href="global.html#onFinished">onFinished</a></li><li><a href="global.html#onJoin">onJoin</a></li><li><a href="global.html#onLeave">onLeave</a></li><li><a href="global.html#onSync">onSync</a></li><li><a href="global.html#originalurl">originalurl</a></li><li><a href="global.html#parameterCount">parameterCount</a></li><li><a href="global.html#parse">parse</a></li><li><a href="global.html#parseParametersFromURL">parseParametersFromURL</a></li><li><a href="global.html#parseURL">parseURL</a></li><li><a href="global.html#parseurl">parseurl</a></li><li><a href="global.html#pathValueRegExp">pathValueRegExp</a></li><li><a href="global.html#plural">plural</a></li><li><a href="global.html#polyfillGlobalThis">polyfillGlobalThis</a></li><li><a href="global.html#preferredCharsets">preferredCharsets</a></li><li><a href="global.html#preferredEncodings">preferredEncodings</a></li><li><a href="global.html#preferredLanguages">preferredLanguages</a></li><li><a href="global.html#preferredMediaTypes">preferredMediaTypes</a></li><li><a href="global.html#prepareObjectStackTrace">prepareObjectStackTrace</a></li><li><a href="global.html#processLock">processLock</a></li><li><a href="global.html#proxyaddr">proxyaddr</a></li><li><a href="global.html#push">push</a></li><li><a href="global.html#rangeParser">rangeParser</a></li><li><a href="global.html#raw">raw</a></li><li><a href="global.html#readStream">readStream</a></li><li><a href="global.html#reauthenticate">reauthenticate</a></li><li><a href="global.html#refreshSession">refreshSession</a></li><li><a href="global.html#relative">relative</a></li><li><a href="global.html#remove">remove</a></li><li><a href="global.html#removeAllChannels">removeAllChannels</a></li><li><a href="global.html#removeChannel">removeChannel</a></li><li><a href="global.html#req">req</a></li><li><a href="global.html#res">res</a></li><li><a href="global.html#resend">resend</a></li><li><a href="global.html#resetPasswordForEmail">resetPasswordForEmail</a></li><li><a href="global.html#retryable">retryable</a></li><li><a href="global.html#rpc">rpc</a></li><li><a href="global.html#s">s</a></li><li><a href="global.html#save">save</a></li><li><a href="global.html#schema">schema</a></li><li><a href="global.html#send">send</a></li><li><a href="global.html#sendHeartbeat">sendHeartbeat</a></li><li><a href="global.html#sequenceToRegExp">sequenceToRegExp</a></li><li><a href="global.html#serialize">serialize</a></li><li><a href="global.html#serveStatic">serveStatic</a></li><li><a href="global.html#setAuth">setAuth</a></li><li><a href="global.html#setCharset">setCharset</a></li><li><a href="global.html#setSession">setSession</a></li><li><a href="global.html#setup">setup</a></li><li><a href="global.html#setupConnection">setupConnection</a></li><li><a href="global.html#sign">sign</a></li><li><a href="global.html#signInAnonymously">signInAnonymously</a></li><li><a href="global.html#signInWithIdToken">signInWithIdToken</a></li><li><a href="global.html#signInWithOAuth">signInWithOAuth</a></li><li><a href="global.html#signInWithOtp">signInWithOtp</a></li><li><a href="global.html#signInWithPassword">signInWithPassword</a></li><li><a href="global.html#signInWithSSO">signInWithSSO</a></li><li><a href="global.html#signInWithWeb3">signInWithWeb3</a></li><li><a href="global.html#signOut">signOut</a></li><li><a href="global.html#signUp">signUp</a></li><li><a href="global.html#sleep">sleep</a></li><li><a href="global.html#startAutoRefresh">startAutoRefresh</a></li><li><a href="global.html#status">status</a></li><li><a href="global.html#stopAutoRefresh">stopAutoRefresh</a></li><li><a href="global.html#storage">storage</a></li><li><a href="global.html#stringFromBase64URL">stringFromBase64URL</a></li><li><a href="global.html#stringFromUTF8">stringFromUTF8</a></li><li><a href="global.html#stringToBase64URL">stringToBase64URL</a></li><li><a href="global.html#stringToPath">stringToPath</a></li><li><a href="global.html#stringToUTF8">stringToUTF8</a></li><li><a href="global.html#stringify">stringify</a></li><li><a href="global.html#subscribe">subscribe</a></li><li><a href="global.html#supportsLocalStorage">supportsLocalStorage</a></li><li><a href="global.html#syncDiff">syncDiff</a></li><li><a href="global.html#syncState">syncState</a></li><li><a href="global.html#teardown">teardown</a></li><li><a href="global.html#test">test</a></li><li><a href="global.html#text">text</a></li><li><a href="global.html#toArray">toArray</a></li><li><a href="global.html#toArrayBuffer">toArrayBuffer</a></li><li><a href="global.html#toBuffer">toBuffer</a></li><li><a href="global.html#toIdentifier">toIdentifier</a></li><li><a href="global.html#toTimestampString">toTimestampString</a></li><li><a href="global.html#tokenToFunction">tokenToFunction</a></li><li><a href="global.html#transformState">transformState</a></li><li><a href="global.html#tty">tty</a></li><li><a href="global.html#typeChecker">typeChecker</a></li><li><a href="global.html#typeis">typeis</a></li><li><a href="global.html#typeofrequest">typeofrequest</a></li><li><a href="global.html#unlinkIdentity">unlinkIdentity</a></li><li><a href="global.html#unpipe">unpipe</a></li><li><a href="global.html#unsign">unsign</a></li><li><a href="global.html#unsubscribe">unsubscribe</a></li><li><a href="global.html#update">update</a></li><li><a href="global.html#updateBucket">updateBucket</a></li><li><a href="global.html#updateUser">updateUser</a></li><li><a href="global.html#updateUserById">updateUserById</a></li><li><a href="global.html#upload">upload</a></li><li><a href="global.html#uploadOrUpdate">uploadOrUpdate</a></li><li><a href="global.html#uploadToSignedUrl">uploadToSignedUrl</a></li><li><a href="global.html#urlencoded">urlencoded</a></li><li><a href="global.html#useColors">useColors</a></li><li><a href="global.html#vary">vary</a></li><li><a href="global.html#verifyOtp">verifyOtp</a></li><li><a href="global.html#wetag">wetag</a></li><li><a href="global.html#wrapfunction">wrapfunction</a></li><li><a href="global.html#wrapproperty">wrapproperty</a></li><li><a href="global.html#writeToStream">writeToStream</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Aug 13 2025 20:57:10 GMT-0700 (Pacific Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
