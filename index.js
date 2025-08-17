@@ -1,6 +1,7 @@
 
 // index.js
 
+/*(
 import express from 'express';
 import dotenv from 'dotenv';
 import userRoutes from './controllers/userController.js';    // adjust paths as needed
@@ -31,4 +32,4 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server listening on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`Server listening on http://localhost:${PORT}`));*/
