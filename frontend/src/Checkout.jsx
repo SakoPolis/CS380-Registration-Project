@@ -12,14 +12,14 @@ import Stepper from '@mui/material/Stepper';
 import Typography from '@mui/material/Typography';
 import ChevronLeftRoundedIcon from '@mui/icons-material/ChevronLeftRounded';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
-import AddressForm from '../../../../Downloads/checkout/components/AddressForm';
+/*import AddressForm from '../../../../Downloads/checkout/components/AddressForm';
 import Info from '../../../../Downloads/checkout/components/Info';
 import InfoMobile from '../../../../Downloads/checkout/components/InfoMobile';
 import PaymentForm from '../../../../Downloads/checkout/components/PaymentForm';
 import Review from '../../../../Downloads/checkout/components/Review';
 import SitemarkIcon from '../../../../Downloads/checkout/components/SitemarkIcon';
 import AppTheme from '../../../../Downloads/shared-theme/AppTheme';
-import ColorModeIconDropdown from '../../../../Downloads/shared-theme/ColorModeIconDropdown';
+import ColorModeIconDropdown from '../../../../Downloads/shared-theme/ColorModeIconDropdown';*/
 
 const steps = ['Shipping address', 'Payment details', 'Review your order'];
 function getStepContent(step) {

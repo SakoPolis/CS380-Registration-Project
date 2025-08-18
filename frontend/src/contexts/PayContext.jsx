@@ -1,6 +1,6 @@
 // frontend/src/contexts/PayContext.jsx
 
-// PayContext.js
+// PayContext.jsx
 
 import React, { createContext, useContext, useState } from 'react';
 
