@@ -14,6 +14,7 @@ import userRoutes from './routes/userRoutes.js';
 import classSlotRoutes from './routes/classSlotRoutes.js';
 import bookingRoutes from './routes/bookingRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import courseRoutes from './routes/courseRoutes.js';
 import cors from 'cors';
 
 const app = express();
@@ -38,6 +39,7 @@ app.use('/api/users', userRoutes);
 app.use('/api', classSlotRoutes);
 app.use('/api', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/courses', courseRoutes);
 
 // 404 Handler
 app.use((req, res, next) => {

@@ -3,40 +3,52 @@
 class BookingService {
     async getAll(supabase, userId) {
         const { data, error } = await supabase
-            .from('class_bookings')
-            .select(`
-        id,
-        slot_id,
-        class_date,
-        booked_at,
-        status,
-        class_slots (
-          id,
-          day_of_week,
-          group_type,
-          start_time,
-          end_time,
-          price_cents,
-          capacity
-        )
-      `)
+            .from('bookings')                      // << table name
+            .select('id, slot_id, class_date, booked_at, status')
             .eq('user_id', userId);
         if (error) throw new Error(error.message);
-        return data.map(b => ({ id: b.id, slotId: b.slot_id, classDate: b.class_date, bookedAt: b.booked_at, status: b.status, ...b.class_slots && { dayOfWeek: b.class_slots.day_of_week, groupType: b.class_slots.group_type, startTime: b.class_slots.start_time, endTime: b.class_slots.end_time, priceCents: b.class_slots.price_cents, capacity: b.class_slots.capacity } }));
+        return (data || []).map(b => ({
+            id: b.id,
+            slotId: b.slot_id,
+            classDate: b.class_date,
+            bookedAt: b.booked_at,
+            status: b.status,
+        }));
     }
+
     async add(supabase, userId, bookingData) {
-        // assume validation of slot existence done in controller
+        // Optional: validate slot exists to give a clear error
+        const { data: slot, error: slotErr } = await supabase
+            .from('class_slots')
+            .select('id')
+            .eq('id', bookingData.slot_id)
+            .single();
+        if (slotErr || !slot) throw new Error('Slot not found');
+
         const { data, error } = await supabase
-            .from('class_bookings')
-            .insert([{ user_id: userId, slot_id: bookingData.slot_id, class_date: bookingData.class_date, status: 'booked' }])
+            .from('bookings')                      // << table name
+            .insert({
+                user_id: userId,
+                slot_id: bookingData.slot_id,
+                class_date: bookingData.class_date,
+                status: 'booked',
+            })
             .select()
             .single();
         if (error) throw new Error(error.message);
-        return { id: data.id, slotId: data.slot_id, classDate: data.class_date, bookedAt: data.booked_at, status: data.status };
+
+        return {
+            id: data.id,
+            slotId: data.slot_id,
+            classDate: data.class_date,
+            bookedAt: data.booked_at,
+            status: data.status,
+        };
     }
+
     async delete(supabase, userId, id) {
         const { error } = await supabase
-            .from('class_bookings')
+            .from('bookings')                      // << table name
             .delete()
             .eq('id', id)
             .eq('user_id', userId);
@@ -44,4 +56,5 @@ class BookingService {
         return { removed: true };
     }
 }
+
 export default new BookingService();

@@ -12,7 +12,7 @@ const SUPA_SERVICE_ROLE_KEY = process.env.SUPABASE_KEY;
 
 
 if (!SUPA_URL) throw new Error('Missing SUPABASE_URL');
-if (!SUPA_SERVICE_ROLE_KEY) throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY');
+if (!SUPA_SERVICE_ROLE_KEY) throw new Error('Missing SUPABASE_KEY');
 
 const supabase = createClient(SUPA_URL, SUPA_SERVICE_ROLE_KEY);
 

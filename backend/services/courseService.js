@@ -12,7 +12,7 @@ class CourseService {
     async create(supabase, userId, courseData) {
         const { data, error } = await supabase
             .from('courses')
-            .insert([{ ...courseData, user_id: userId }])
+            .insert({ ...courseData, user_id: userId })   // << include user_id
             .select()
             .single();
         if (error) throw new Error(error.message);
