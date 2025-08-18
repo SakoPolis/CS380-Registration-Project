@@ -44,8 +44,8 @@ import { styled } from '@mui/material/styles';
 import AppTheme from "../shared-theme/AppTheme.jsx";
 import ColorModeSelect from '../shared-theme/ColorModeSelect';
 import ForgotPassword from '../components/ForgotPassword';
-import { GoogleIcon, FacebookIcon, SitemarkIcon } from './components/CustomIcons';
-import { useData } from './components/UserContext';
+import { GoogleIcon, FacebookIcon, SitemarkIcon } from './CustomIcons.jsx';
+import { useData } from '../contexts/UserContext.jsx';
 
 const SignInCard = styled(MuiCard)(({ theme }) => ({
     maxWidth: 450,

@@ -50,7 +50,7 @@ import {
 import { styled } from '@mui/material/styles';
 import AppTheme from '../shared-theme/AppTheme';
 import ColorModeSelect from '../shared-theme/ColorModeSelect';
-import { GoogleIcon, FacebookIcon, SitemarkIcon } from './components/CustomIcons';
+import { GoogleIcon, FacebookIcon, SitemarkIcon } from './CustomIcons.jsx';
 
 const SignUpCard = styled(MuiCard)(({ theme }) => ({
     maxWidth: 450,

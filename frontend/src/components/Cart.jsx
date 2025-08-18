@@ -27,7 +27,7 @@
 // src/components/Cart.jsx
 import React from 'react';
 import { Box, Typography, Table, TableBody, TableCell, TableRow, Button } from '@mui/material';
-import { useCart } from '../CartContext';
+import { useCart } from '../contexts/CartContext.jsx';
 import { useNavigate } from 'react-router-dom';
 
 export default function Cart() {
