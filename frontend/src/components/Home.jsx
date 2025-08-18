@@ -23,7 +23,7 @@ export default Home;
 const Home = () => {
     return (
         <div style={{ padding: "2rem", textAlign: "center" }}>
-            <h1>✅ Home is rendering!</h1>
+            <h1> Home is rendering!</h1>
             <p>If you see this text, React Router and App.jsx are working fine.</p>
         </div>
     );
