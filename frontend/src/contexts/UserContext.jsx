@@ -1,16 +1,12 @@
-//UserContext.js
 
-import React, {createContext, useContext, useState} from "react";
+// frontend/src/contexts/UserContext.jsx
+import React, { createContext, useContext, useState } from "react";
 
-// Create the context
-const UserContext = createContext();
+const UserContext = createContext(null);
 
 export function UserProvider({ children }) {
-    const [userData, setUserData] = useState({});
-
-    const addUserData = (newData) => {
-        setUserData((prev) => ({ ...prev, ...newData })); // Merge new data into the existing object
-    };
+    const [userData, setUserData] = useState(null);
+    const addUserData = (patch) => setUserData((prev) => ({ ...(prev || {}), ...patch }));
 
     return (
         <UserContext.Provider value={{ userData, setUserData, addUserData }}>
@@ -20,3 +16,4 @@ export function UserProvider({ children }) {
 }
 
 export const useData = () => useContext(UserContext);
+export const useUser = () => useContext(UserContext); // <-- real hook, not a class
