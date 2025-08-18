@@ -1,35 +1,30 @@
 // frontend/src/contexts/PayContext.jsx
+import React, { createContext, useContext, useMemo, useState } from "react";
 
-// PayContext.jsx
+const defaultValue = {
+    payData: {
+        paymentType: "creditCard",
+        cardNumber: "",
+        cvv: "",
+        expirationDate: "",
+        cardHolder: "",
+    },
+    setPayData: () => {},
+    addPayData: () => {},
+};
 
-import React, { createContext, useContext, useState } from 'react';
-
-const PayContext = createContext(null);
+const PayContext = createContext(defaultValue);
 
 export const PayProvider = ({ children }) => {
-    const [payData, setPayData] = useState({
-        paymentType: 'creditCard',
-        cardNumber: '',
-        cvv: '',
-        expirationDate: '',
-        cardHolder: '',
-    });
+    const [payData, setPayData] = useState(defaultValue.payData);
 
     const addPayData = (newData) => {
         setPayData((prev) => ({ ...prev, ...newData }));
     };
 
-    return (
-        <PayContext.Provider value={{ payData, setPayData, addPayData }}>
-            {children}
-        </PayContext.Provider>
-    );
+    const value = useMemo(() => ({ payData, setPayData, addPayData }), [payData]);
+
+    return <PayContext.Provider value={value}>{children}</PayContext.Provider>;
 };
 
-export const usePayData = () => {
-    const context = useContext(PayContext);
-    if (!context) {
-        throw new Error('usePayData must be used within a PayProvider');
-    }
-    return context;
-};
+export const usePayData = () => useContext(PayContext);

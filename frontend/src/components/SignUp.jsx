@@ -30,153 +30,139 @@
 
 // src/SignUp.jsx
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import supabase, {makeSupabaseClient} from "../config/supabase.js";
-import {
-    Box,
-    Button,
-    Checkbox,
-    CssBaseline,
-    Divider,
-    FormControl,
-    FormControlLabel,
-    FormLabel,
-    TextField,
-    Typography,
-    Stack,
-    Card as MuiCard,
-} from '@mui/material';
-import { styled } from '@mui/material/styles';
-import AppTheme from '../shared-theme/AppTheme';
-import ColorModeSelect from '../shared-theme/ColorModeSelect';
-import { GoogleIcon, FacebookIcon, SitemarkIcon } from './CustomIcons.jsx';
+// frontend/src/components/SignUp.jsx
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import supabase from "../config/supabase.js";
 
-const SignUpCard = styled(MuiCard)(({ theme }) => ({
-    maxWidth: 450,
-    margin: 'auto',
-    padding: theme.spacing(4),
-    display: 'flex',
-    flexDirection: 'column',
-    gap: theme.spacing(2),
-}));
+// ✅ Deep MUI imports (match SignIn style)
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import CssBaseline from "@mui/material/CssBaseline";
+import FormControl from "@mui/material/FormControl";
+import FormLabel from "@mui/material/FormLabel";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
+import Paper from "@mui/material/Paper";
+import Stack from "@mui/material/Stack";
 
 export default function SignUp() {
     const navigate = useNavigate();
-    const [form, setForm] = useState({ name: '', email: '', password: '' });
-    const [errors, setErrors] = useState({ name: '', email: '', password: '', submit: '' });
 
-    const handleChange = ({ target: { name, value } }) => {
-        setForm(prev => ({ ...prev, [name]: value }));
-        setErrors(prev => ({ ...prev, [name]: '' }));
-    };
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [submitError, setSubmitError] = useState("");
+    const [submitSuccess, setSubmitSuccess] = useState("");
 
-    const validate = () => {
-        const errs = {};
-        if (!form.name.trim()) errs.name = 'Name required';
-        if (!/\S+@\S+\.\S+/.test(form.email)) errs.email = 'Valid email required';
-        if (form.password.length < 6) errs.password = 'At least 6 characters';
-        setErrors(prev => ({ ...prev, ...errs }));
-        return Object.keys(errs).length === 0;
-    };
-
-    const handleSubmit = async e => {
-        console.log('handleSubmit called', { form });
-
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!validate()) return;
+        setSubmitError("");
+        setSubmitSuccess("");
 
-        const { data, error } = await supabase.auth.signUp({
-            email: form.email, password: form.password, options: {
-                // write your “name” field into metadata.full_name
-                data: { full_name: form.name },
-                emailRedirectTo: `${window.location.origin}/signin`
-            }
+        if (!name.trim()) {
+            setSubmitError("Please enter your name.");
+            return;
+        }
+        if (!/\S+@\S+\.\S+/.test(email)) {
+            setSubmitError("Please enter a valid email.");
+            return;
+        }
+        if (password.length < 6) {
+            setSubmitError("Password must be at least 6 characters.");
+            return;
+        }
+
+        const { error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: { full_name: name },
+                // After email confirmation, send them to Sign In
+                emailRedirectTo: `${window.location.origin}/signin`,
+            },
         });
-        console.log("⮞ supabase.auth.signUp →", data, error);
 
         if (error) {
-            setErrors(prev => ({ ...prev, submit: error.message }));
-        } else {
-            // show a success banner
-            setForm({ name: "", email: "", password: "" });
-            setErrors({ name: "", email: "", password: "", submit: "" });
-            navigate('/');
+            setSubmitError(error.message);
+            return;
         }
+
+        // Keep it simple: prompt user to sign in now
+        setSubmitSuccess("Account created! Please check your email, then sign in.");
+        setTimeout(() => navigate("/signin"), 800);
     };
 
     return (
-        <AppTheme>
+        <React.Fragment>
             <CssBaseline enableColorScheme />
-            <ColorModeSelect sx={{ position: 'fixed', top: 64, right: 16 }} />
-            <Stack sx={{ minHeight: '100vh', p: 2 }} justifyContent="center">
-                <SignUpCard variant="outlined">
-                    <SitemarkIcon />
-                    <Typography variant="h4" component="h1">Sign up</Typography>
+            <Stack
+                sx={{ minHeight: "100vh" }}
+                alignItems="center"
+                justifyContent="center"
+                spacing={2}
+            >
+                <Paper elevation={2} sx={{ p: 4, width: "100%", maxWidth: 420 }}>
+                    <Typography variant="h4" component="h1" gutterBottom>
+                        Sign up
+                    </Typography>
 
-                    <Box component="form" onSubmit={handleSubmit} noValidate sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <FormControl>
+                    <Box
+                        component="form"
+                        onSubmit={handleSubmit}
+                        noValidate
+                        sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+                    >
+                        <FormControl fullWidth>
                             <FormLabel>Name</FormLabel>
                             <TextField
                                 name="name"
-                                value={form.name}
-                                onChange={handleChange}
-                                error={!!errors.name}
-                                helperText={errors.name}
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
                                 required
                                 fullWidth
                             />
                         </FormControl>
 
-                        <FormControl>
+                        <FormControl fullWidth>
                             <FormLabel>Email</FormLabel>
                             <TextField
                                 name="email"
                                 type="email"
-                                value={form.email}
-                                onChange={handleChange}
-                                error={!!errors.email}
-                                helperText={errors.email}
+                                autoComplete="username"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
                                 required
                                 fullWidth
                             />
                         </FormControl>
 
-                        <FormControl>
+                        <FormControl fullWidth>
                             <FormLabel>Password</FormLabel>
                             <TextField
                                 name="password"
                                 type="password"
-                                value={form.password}
-                                onChange={handleChange}
-                                error={!!errors.password}
-                                helperText={errors.password}
+                                autoComplete="new-password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
                                 required
                                 fullWidth
                             />
                         </FormControl>
 
-                        <FormControlLabel control={<Checkbox />} label="I want to receive updates via email." />
-                        {errors.submit && <Typography color="error">{errors.submit}</Typography>}
-                        <Button type="submit" variant="contained" fullWidth>Sign up</Button>
+                        {submitError && <Typography color="error">{submitError}</Typography>}
+                        {submitSuccess && <Typography color="primary">{submitSuccess}</Typography>}
+
+                        <Button type="submit" variant="contained" fullWidth>
+                            Create account
+                        </Button>
                     </Box>
+                </Paper>
 
-                    <Divider>
-                        <Typography color="text.secondary">or</Typography>
-                    </Divider>
-                    <Stack spacing={2}>
-                        <Button variant="outlined" startIcon={<GoogleIcon />}>Sign up with Google</Button>
-                        <Button variant="outlined" startIcon={<FacebookIcon />}>Sign up with Facebook</Button>
-                    </Stack>
-
-                    <Typography align="center">
-                        Already have an account?{' '}
-                        <Typography component="span" color="primary" sx={{ cursor: 'pointer' }} onClick={() => navigate('/signin')}>
-                            Sign in
-                        </Typography>
-                    </Typography>
-                </SignUpCard>
+                <Button variant="text" onClick={() => navigate("/signin")}>
+                    Already have an account? Sign in →
+                </Button>
             </Stack>
-        </AppTheme>
+        </React.Fragment>
     );
 }

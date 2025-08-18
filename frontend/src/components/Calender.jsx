@@ -23,9 +23,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Box, Grid, Typography, Button, Paper, Table, TableBody, TableCell, TableRow, Radio, Snackbar, SnackbarContent } from '@mui/material';
-import { useCart } from './CartContext';
-//import { supabase } from '../lib/supabaseClient';
-import {useData} from "./UserContext";
+import { useCart } from '../contexts/CartContext';
+import supabase from "../config/supabase.js";
+import {useData} from "../contexts/UserContext";
 
 const Calendar = () => {
     const [selectedDate, setSelectedDate] = useState(null);

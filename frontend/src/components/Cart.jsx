@@ -25,54 +25,90 @@
 
 
 // src/components/Cart.jsx
-import React from 'react';
-import { Box, Typography, Table, TableBody, TableCell, TableRow, Button } from '@mui/material';
-import { useCart } from '../contexts/CartContext.jsx';
-import { useNavigate } from 'react-router-dom';
+// frontend/src/components/Cart.jsx
+import React from "react";
+import { useNavigate } from "react-router-dom";
+
+// ✅ Deep MUI imports (keep consistent with your working SignIn style)
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Paper from "@mui/material/Paper";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableRow from "@mui/material/TableRow";
+import Typography from "@mui/material/Typography";
+import Stack from "@mui/material/Stack";
+
+// If your CartContext exports useCart(), this import is correct;
+// otherwise change to: import { CartContext } from "../contexts/CartContext.jsx" and use useContext.
+import { useCart } from "../contexts/CartContext.jsx";
 
 export default function Cart() {
-    const { cart, removeFromCart, clearCart } = useCart();
     const navigate = useNavigate();
+    const ctx = typeof useCart === "function" ? useCart() : {};
+    const {
+        cart: rawCart,
+        removeFromCart: remove = () => {},
+        clearCart: clear = () => {},
+    } = ctx || {};
 
-    console.log(cart);
+    const cart = Array.isArray(rawCart) ? rawCart : [];
+
+    const hasItems = cart.length > 0;
 
     return (
-        <Box sx={{ p: 3 }}>
-            <Typography variant="h4" gutterBottom>Your Cart</Typography>
+        <Stack alignItems="center" sx={{ minHeight: "100vh", py: 6 }}>
+            <Paper elevation={2} sx={{ width: "100%", maxWidth: 720, p: 3 }}>
+                <Typography variant="h4" gutterBottom>
+                    Your Cart
+                </Typography>
 
-            {cart.length > 0 ? (
-                <Table>
-                    <TableBody>
-                        {cart.map(item => (
-                            <TableRow key={item.id}>
-                                <TableCell>{item.group}</TableCell>
-                                <TableCell>{item.time}</TableCell>
-                                <TableCell>${item.cost}</TableCell>
-                                <TableCell>
-                                    <Button
-                                        variant="outlined"
-                                        color="error"
-                                        onClick={() => removeFromCart(item.id)}
-                                    >
-                                        Remove
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            ) : (
-                <Typography>No items in cart.</Typography>
-            )}
+                {hasItems ? (
+                    <Table>
+                        <TableBody>
+                            {cart.map((item, idx) => {
+                                const key = item?.id ?? idx; // fallback key if no id
+                                const group = item?.group ?? "—";
+                                const time = item?.time ?? "—";
+                                const cost = typeof item?.cost === "number" ? item.cost.toFixed(2) : String(item?.cost ?? "—");
 
-            <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Button variant="contained" onClick={clearCart} sx={{ width: 200 }}>
-                    Clear Cart
-                </Button>
-                <Button variant="contained" onClick={() => navigate('/checkout')} sx={{ width: 200 }}>
-                    Checkout
-                </Button>
-            </Box>
-        </Box>
+                                return (
+                                    <TableRow key={key}>
+                                        <TableCell>{group}</TableCell>
+                                        <TableCell>{time}</TableCell>
+                                        <TableCell>${cost}</TableCell>
+                                        <TableCell align="right">
+                                            <Button
+                                                variant="outlined"
+                                                color="error"
+                                                onClick={() => remove(item?.id ?? key)}
+                                            >
+                                                Remove
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
+                        </TableBody>
+                    </Table>
+                ) : (
+                    <Typography sx={{ my: 2 }}>No items in cart.</Typography>
+                )}
+
+                <Box sx={{ mt: 3, display: "flex", gap: 2 }}>
+                    <Button variant="contained" onClick={clear} disabled={!hasItems}>
+                        Clear Cart
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={() => navigate("/checkout")}
+                        disabled={!hasItems}
+                    >
+                        Checkout
+                    </Button>
+                </Box>
+            </Paper>
+        </Stack>
     );
 }

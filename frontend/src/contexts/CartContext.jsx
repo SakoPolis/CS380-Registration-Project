@@ -16,41 +16,82 @@
 
 
 
-import React, { createContext, useState, useEffect } from 'react';
-import axios from 'axios';
+// frontend/src/contexts/CartContext.jsx
+/**
+ * CartContext: safe defaults + hook
+ */
+import React, {
+    createContext,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
+} from "react";
+import axios from "axios";
 
-export const CartContext = createContext();
+const defaultValue = {
+    cart: [],
+    addToCart: () => {},
+    removeFromCart: () => {},
+    clearCart: () => {},
+};
+
+export const CartContext = createContext(defaultValue);
+
+export const useCart = () => useContext(CartContext);
 
 export const CartProvider = ({ children }) => {
     const [cart, setCart] = useState([]);
+    const baseURL =
+        import.meta?.env?.VITE_API_BASE_URL || "http://localhost:8080";
 
-    // load cart for this user on mount
     useEffect(() => {
-        async function fetchCart() {
-            const res = await axios.get('http://localhost:8080/api/cart');
-            setCart(res.data);
-        }
-        fetchCart();
-    }, []);
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await axios.get(`${baseURL}/api/cart`);
+                if (!cancelled && Array.isArray(res.data)) setCart(res.data);
+            } catch (e) {
+                console.error("Failed to load cart:", e);
+                // keep empty cart; don't crash UI
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [baseURL]);
 
-    // add an item to cart
     const addToCart = async (item) => {
-        const res = await axios.post('http://localhost:8080/api/cart', item);
-        setCart(res.data);
+        try {
+            const res = await axios.post(`${baseURL}/api/cart`, item);
+            if (Array.isArray(res.data)) setCart(res.data);
+        } catch (e) {
+            console.error("addToCart failed:", e);
+        }
     };
 
-    // remove an item from cart
     const removeFromCart = async (itemId) => {
-        const res = await axios.delete(`http://localhost:8080/api/cart/${itemId}`);
-        setCart(res.data);
+        try {
+            const res = await axios.delete(`${baseURL}/api/cart/${itemId}`);
+            if (Array.isArray(res.data)) setCart(res.data);
+        } catch (e) {
+            console.error("removeFromCart failed:", e);
+        }
     };
 
-    return (
-        <CartContext.Provider value={{ cart, addToCart, removeFromCart }}>
-            {children}
-        </CartContext.Provider>
-    );
-};
+    const clearCart = async () => {
+        try {
+            // if you have an API route for clear, call it here; otherwise just clear locally
+            setCart([]);
+        } catch (e) {
+            console.error("clearCart failed:", e);
+        }
+    };
 
-export class useCart {
-}
+    const value = useMemo(
+        () => ({ cart, addToCart, removeFromCart, clearCart }),
+        [cart]
+    );
+
+    return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+};
