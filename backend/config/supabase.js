@@ -1,18 +1,25 @@
 // backend/config/supabase.js
-
 import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv'; dotenv.config();
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(__dirname, '..', '.env') }); // or path.join(__dirname, '.env') if you place it next to this file
 
 const SUPA_URL = process.env.SUPABASE_URL;
-const SUPA_KEY = process.env.SUPABASE_KEY;
+const SUPA_SERVICE_ROLE_KEY = process.env.SUPABASE_KEY;
 
-// global anon client—for auth routes only
-const supabase = createClient(SUPA_URL, SUPA_KEY);
 
-// per-request factory—for injecting the JWT on data calls
+if (!SUPA_URL) throw new Error('Missing SUPABASE_URL');
+if (!SUPA_SERVICE_ROLE_KEY) throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY');
+
+const supabase = createClient(SUPA_URL, SUPA_SERVICE_ROLE_KEY);
+
+// Optional: per-request client (rarely needed on backend)
 export function makeSupabaseClient(token) {
-    return createClient(SUPA_URL, SUPA_KEY, {
-        global: { headers: { Authorization: `Bearer ${token}` } }
+    return createClient(SUPA_URL, SUPA_SERVICE_ROLE_KEY, {
+        ...(token ? { global: { headers: { Authorization: `Bearer ${token}` } } } : {}),
     });
 }
 

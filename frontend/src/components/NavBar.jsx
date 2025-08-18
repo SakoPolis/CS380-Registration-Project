@@ -8,7 +8,7 @@ import { useUser } from "../contexts/UserContext.jsx";
 
 const navLinks = [
     { label: "Home", to: "/" },
-    { label: "Calendar", to: "/calender" },
+    { label: "Calendar", to: "/calendar" },
     { label: "Cart", to: "/cart" },
 ];
 
