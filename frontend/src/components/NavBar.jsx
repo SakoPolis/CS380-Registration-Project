@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { AppBar, Toolbar, Typography, Button, Box, Link as MuiLink } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
-import { useData } from './UserContext';
+import supabase, {makeSupabaseClient} from "../config/supabase.js";
+import { useData } from '../contexts/UserContext.jsx';
 
 const navLinks = [
     { label: 'Home', to: '/' },
@@ -48,7 +48,7 @@ export default function NavBar() {
         console.log('handleSignOut');
 
         // 1) Try to clear on the server+client…
-        supabase.auth.signOut()
+        makeSupabaseClient.auth.signOut()
             .then(({ error }) => {
                 if (error) console.error('Server sign-out error:', error.message);
                 else console.log('Server sign-out succeeded');
