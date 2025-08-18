@@ -39,6 +39,8 @@ export default function App() {
                             <Route path="/infomobile" element={<InfoMobile />} />
                             <Route path="/paymentform" element={<PaymentForm />} />
                             <Route path="/review" element={<Review />} />
+                            <Route path="/calender" element={<Calender />} />
+
                         </Routes>
                     </Router>
                 </PayProvider>
