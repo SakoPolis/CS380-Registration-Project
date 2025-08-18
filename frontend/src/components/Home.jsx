@@ -12,7 +12,14 @@ const Home = () => (
             alt="Pottery Times"
             style={{ maxWidth: "100%", height: "auto" }}
         />
-        <Typography variant="body1">Home Page</Typography>
+        <Typography variant="body1"> <h1>Pottery Times</h1>
+            <p>Pottery times is a local artist-run studio that offers affordable pottery lessons to adults, teenagers, and children. We offer a fun and hands-on experience while teaching the fundamentals of pottery-making.  </p>
+
+            <ul>
+                <li>No long-term commitments</li>
+                <li>No membership requirements</li>
+                <li>Beginner friendly! </li>
+            </ul></Typography>
     </Container>
 );
 
